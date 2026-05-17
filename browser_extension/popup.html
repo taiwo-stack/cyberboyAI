@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="header">
+    <div class="logo">🛡️ CyberBoyAI</div>
+  </div>
+  
+  <div class="content">
+    <div id="loading" class="hidden">
+      <div class="spinner"></div>
+      <p>Analyzing via Multi-Agent Pipeline...</p>
+    </div>
+    
+    <div id="result" class="hidden">
+      <div id="verdict-banner" class="banner">
+        <h2 id="verdict-title">SAFE</h2>
+        <span id="confidence">100%</span>
+      </div>
+      
+      <div class="scanned-url-container">
+        <div id="scanned-url" class="scanned-url"></div>
+      </div>
+      
+      <p id="explanation" class="explanation"></p>
+      
+      <div class="stats">
+        <div class="stat-row"><strong>Threat Type:</strong> <span id="threat-type"></span></div>
+        <div class="stat-row"><strong>Processing Time:</strong> <span id="processing-time"></span></div>
+      </div>
+
+      <div id="red-flags-container" class="hidden">
+        <h3>🚨 Red Flags</h3>
+        <ul id="red-flags-list"></ul>
+      </div>
+
+      <div class="advice">
+        <strong>Advice:</strong> <span id="advice"></span>
+      </div>
+    </div>
+    
+    <div id="error" class="hidden">
+      <p id="error-msg">Failed to connect to CyberBoyAI Backend. Ensure the Python API is running on localhost:8000.</p>
+    </div>
+  </div>
+
+  <button id="scan-btn">Scan Current Page</button>
+
+  <script src="popup.js"></script>
+</body>
+</html>

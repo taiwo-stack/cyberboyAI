@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+supabase
+httpx
+pydantic
+python-dotenv
+playwright
+python-whois
+tldextract
+python-Levenshtein
+scikit-learn
+joblib
+openai
+apscheduler
+slowapi

@@ -1,0 +1,22 @@
+[
+  {
+    "name": "16Shop Kit",
+    "signature": "name=\"chal\"",
+    "description": "Common signature for 16Shop phishing kits targeting Apple/Amazon."
+  },
+  {
+    "name": "Frappo Kit",
+    "signature": "id=\"frap-frame\"",
+    "description": "Frappo phishing kit hidden iframe signature."
+  },
+  {
+    "name": "Generic Evilginx",
+    "signature": "x-evilginx",
+    "description": "Evilginx reverse proxy signature."
+  },
+  {
+    "name": "Suspicious Hidden Input",
+    "signature": "input type=\"hidden\" name=\"antibot\"",
+    "description": "Common antibot token used by modern phishing kits to block crawlers."
+  }
+]

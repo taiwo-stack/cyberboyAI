@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+:root {
+  --background: #030712;
+  --foreground: #e2e8f0;
+  --accent: #3b82f6;
+  --terminal-green: #22c55e;
+  --terminal-dim: #64748b;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+@keyframes scan {
+  0%   { background-position: 0 0; }
+  100% { background-position: 0 100vh; }
+}
+
+/* Fade-in for new bubbles */
+.fade-in {
+  animation: fade-in 0.4s ease both;
+}
+
+/* Blinking cursor for typing animation */
+.typing-cursor::after {
+  content: '▋';
+  display: inline-block;
+  color: var(--accent);
+  animation: cursor-blink 0.75s step-start infinite;
+  margin-left: 2px;
+}
+
+/* Subtle CRT scan-line overlay */
+.scanlines {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 2px,
+    rgba(0, 0, 0, 0.06) 2px,
+    rgba(0, 0, 0, 0.06) 4px
+  );
+}
+
+/* Terminal-styled scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #334155; }
