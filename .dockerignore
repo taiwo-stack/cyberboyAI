@@ -1,0 +1,31 @@
+# ── Secrets ───────────────────────────────────────────────────
+**/.env
+backend/.env
+
+# ── Frontend (not needed in the backend image) ────────────────
+frontend/
+
+# ── Git / IDE ─────────────────────────────────────────────────
+.git/
+.gitignore
+.DS_Store
+
+# ── Python caches ─────────────────────────────────────────────
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.joblib
+
+# ── Node artifacts ────────────────────────────────────────────
+**/node_modules/
+**/.next/
+
+# ── ML / data (large, not needed at runtime) ──────────────────
+data/
+ml_training/
+
+# ── Docs / markdown ───────────────────────────────────────────
+*.md
+ARCHITECTURE.md
+PRESENTATION_GUIDE.md
+README.md
