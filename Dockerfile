@@ -38,4 +38,4 @@ COPY backend/ .
 EXPOSE 8000
 
 # ── Start ─────────────────────────────────────────────────────
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD python scripts/download_models.py && uvicorn main:app --host 0.0.0.0 --port 8000
