@@ -83,75 +83,40 @@ This guide aligns 100% with the *actual code implementation* in `ml_training/tra
 
 ---
 
-## Slide 5: Layer 1 & 2: Vision OCR & Linguistic NLP Engine (Email Preprocessing)
+## Slide 5: Input Analysis: Vision OCR, Redirect Chains & Email Processing
 ### 🖥️ Slide Content
 *   **Visual Phishing (OCR & QR Decoding):**
-    *   Hackers put malicious links inside visual QR codes ("Qishing") or embed fake invoices in screenshots to bypass text filters.
-    *   CyberBoyAI uses **GPT-4o-Vision** to extract links and analyze the visual intent of images.
-*   **Linguistic NLP Forensics (Email/SMS Phishing):**
-    *   Analyzes the email/message body to detect urgency, fear, and manipulation.
-    *   **Unified Training Corpus:** Merged the **Apache SpamAssassin Corpus** (`easy_ham`, `easy_ham_2`, `hard_ham`, `spam`, `spam_2`) with the **Zenodo SpamAssassin Dataset**.
-    *   **Preprocessing Pipeline:** Parses `.eml` files dynamically, extracts HTML text, decodes text/plain MIME segments, performs UTF-8 cleaning, and removes duplicate bodies to prevent model overfitting.
+    *   GPT-4o-Vision extracts links from visual QR codes ("Qishing") and screens visual text to bypass traditional filters.
+*   **Email Processing Pipeline:**
+    *   Unified training corpus merging **Apache SpamAssassin Corpus** with **Zenodo SpamAssassin CSV**.
+    *   Parses raw `.eml` headers, decodes text/plain MIME payloads, scrubs code formatting, and deduplicates to guarantee semantic training data.
+*   **Redirect Tracker:**
+    *   Recursively follows redirect chains (up to 10 hops) to unmask target landing pages hidden behind shorteners (e.g., `bit.ly`).
 
 ### 🗣️ Presenter Script
-> *"Let's talk about the first two layers: Vision and Phrasing. Attackers are smart—they hide links inside QR codes in emails, a technique known as 'Qishing'. CyberBoyAI immediately runs optical character recognition and QR decoding using vision AI to extract the true text. If the input is an email or SMS, our Linguistic Engine converts the text into a mathematical matrix. We built a unified training corpus by merging the Apache SpamAssassin dataset with the Zenodo SpamAssassin CSV data. The preprocessing script automatically parses raw email headers, decodes text/plain MIME segments, scrubs out formatting junk, and deduplicates the emails by body. This guarantees our machine learning model only trains on unique, high-fidelity semantic content."*
+> *"Let's talk about our entry-level analysis pipelines. Attackers frequently hide links inside visual QR codes in emails, a technique known as 'Qishing'. CyberBoyAI immediately runs optical character recognition and QR decoding using vision AI to extract the true text. If the input is an email, our system parses raw email headers and decodes plain text segments from a unified training corpus made from the Apache SpamAssassin and Zenodo datasets. Furthermore, if a link is hidden behind a shortener like bit.ly, our recursive Redirect Tracker follows up to 10 redirects until it exposes the final true destination."*
 
 ---
 
-## Slide 6: Mathematical Model 1: TF-IDF Vectorization
+## Slide 6: The Mathematical Engine: Core Algorithms & Heuristics
 ### 🖥️ Slide Content
-*   **Goal:** Convert text strings into rich mathematical vectors.
-*   **Term Frequency ($\text{TF}$):** Measures occurrence frequency of a term $t$ in a document $d$:
-    $$\text{TF}(t, d) = \frac{f_{t,d}}{\sum_{t' \in d} f_{t',d}}$$
-*   **Inverse Document Frequency ($\text{IDF}$):** Suppresses common words ("the," "and") and amplifies rare, high-risk scam terms ("immediate-action," "verify-bank"):
-    $$\text{IDF}(t, D) = \log \left( \frac{1 + |D|}{1 + |\{d \in D : t \in d\}|} \right) + 1$$
-*   **Combined TF-IDF Weight:**
-    $$\text{TF-IDF}(t, d, D) = \text{TF}(t, d) \times \text{IDF}(t, D)$$
+*   **1. Shannon Entropy (Domain Character Randomness):**
+    *   *What it does:* Measures the information density/randomness of characters in a domain. Detects auto-generated domains and botnet Domain Generation Algorithms (DGA).
+*   **2. Normalized Levenshtein Distance (Fuzzy Brand Matching):**
+    *   *What it does:* Calculates the minimum character edits required to transform a subdomain into a protected global brand. Identifies typosquatting visual substitutions (e.g., `netfl1x`).
+*   **3. TF-IDF Vectorization (NLP Semantic Encoding):**
+    *   *What it does:* Converts raw text bodies into high-dimensional numerical vectors, mathematically suppressing neutral words ("the," "and") and amplifying rare scam keywords ("suspended," "bvn").
+*   **4. Gini Impurity (ML Tree-Splitting Optimization):**
+    *   *What it does:* Split optimizer during machine learning training that maximizes the statistical separation between clean and malicious data, constructing optimal decision trees.
+*   **5. Consensus-Aware Weighted Fusion (Dynamic Score Aggregation):**
+    *   *What it does:* An adaptive weighted sum that aggregates our 9 layers, shifting weights to let dynamic visual AI analysis override static structural scores in conflict zones.
 
 ### 🗣️ Presenter Script
-> *"To analyze text, we don't just search for keywords. We use a classical, mathematical approach called TF-IDF. Term Frequency measures how often a word appears in the email. Inverse Document Frequency checks how rare that word is across our entire dictionary. Words like 'and' or 'the' get mathematically suppressed to zero, while rare, high-intent threat words like 'suspended' or 'verify' are heavily amplified. This creates a multi-dimensional signature vector representing the exact semantic risk of the message."*
+> *"Rather than using complex formulas that are hard to audit, CyberBoyAI operates on 5 highly robust, explainable mathematical concepts. We use Shannon Entropy to measure character randomness and catch auto-generated domains. We run Levenshtein Distance fuzzy matching to detect typosquatting of global brands. We use TF-IDF vectorization to convert English emails into mathematical matrices, amplifying rare threat words. During training, we use Gini Impurity to split our machine learning trees. Finally, we use Consensus-Aware Weighted Fusion to dynamically adjust weights when agents disagree, letting high-confidence visual AI checks override static URL structures. This mathematical combination makes our system incredibly stable and explainable."*
 
 ---
 
-## Slide 7: Layer 3 & 4: Redirect Chains & Fuzzy Brand Matching
-### 🖥️ Slide Content
-*   **Redirect Chain Tracker:**
-    *   Attackers hide behind URL shorteners like `bit.ly` or `tinyurl.com` to mask their landing pages.
-    *   CyberBoyAI recursively follows every redirect hop (up to 10 layers), checking the HTTP headers to expose the final target destination.
-*   **Fuzzy Brand Matching (Typosquatting):**
-    *   Detects visual homoglyphs and character substitutions (e.g., `netfIix` with capital `i` or `opay-verification.com`).
-    *   Compares domain components against Tranco top global brands using **Levenshtein Distance**.
-    *   Applies a subdomain/path noise penalty factor of **$\gamma = 0.94$**.
-
-### 🗣️ Presenter Script
-> *"Layers 3 and 4 tackle how links are disguised. Hackers love using URL shorteners to slide past simple firewalls. CyberBoyAI follows the redirect chain recursively, unmasking shorteners until it exposes the final domain. Then, our Brand Agent executes a fuzzy-match algorithm. It parses the URL into subcomponents and uses the Levenshtein edit distance to match them against a database of protected global brands. If it detects a domain that is 90% similar to Amazon or Netflix, but is hosted on a completely different domain, it immediately triggers a critical typosquatting warning."*
-
----
-
-## Slide 8: Mathematical Model 2: Levenshtein Distance
-### 🖥️ Slide Content
-*   **Definition:** The minimum number of single-character edits (insertions, deletions, substitutions) required to change string $s_1$ into $s_2$.
-*   **Recurrence Relation:**
-    $$\text{lev}_{s_1, s_2}(i, j) = \begin{cases}
-      \max(i, j) & \text{if } \min(i, j) = 0, \\
-      \min \begin{cases}
-              \text{lev}_{s_1, s_2}(i-1, j) + 1 \\
-              \text{lev}_{s_1, s_2}(i, j-1) + 1 \\
-              \text{lev}_{s_1, s_2}(i-1, j-1) + \text{cost}
-           \end{cases} & \text{otherwise.}
-    \end{cases}$$
-*   **Normalized Brand Similarity Score:**
-    $$\text{Sim}_{\text{Brand}}(s_1, s_2) = 1 - \frac{\text{lev}(s_1, s_2)}{\max(|s_1|, |s_2|)}$$
-*   **Final Subdomain Penalty Adjuster:**
-    $$\text{Sim}_{\text{Final}} = \text{Sim}_{\text{Brand}} \times 0.94$$
-*   **Execution Rule:** $\text{Sim}_{\text{Final}} \ge 0.90 \implies$ **Fast-Path Override 2** (forces Verdict to `DANGEROUS` with $97\%$ confidence).
-
-### 🗣️ Presenter Script
-> *"Mathematically, Levenshtein Distance measures string similarity by calculating edit costs. For example, replacing a lowercase 'l' with a number '1' has an edit cost of 1. We normalize this distance against the maximum string length so we get a clean similarity score between 0.0 and 1.0. If the final score is 90% or higher, we trigger our second Fast-Path override. We don't wait for other tests—the system instantly flags the link as DANGEROUS because brand impersonation is a definitive indicator of malice."*
-
----
-
-## Slide 9: Layer 5 & 6: OSINT Intelligence & URL Dataset Pipeline
+## Slide 7: OSINT Intelligence & URL Dataset Pipeline
 ### 🖥️ Slide Content
 *   **Live OSINT & Caching:**
     *   Queries **Google Safe Browsing** (Live API), **AbuseIPDB** (IP Reputation), and **AlienVault OTX** (Threat Pulse Counts) in parallel.
@@ -163,29 +128,26 @@ This guide aligns 100% with the *actual code implementation* in `ml_training/tra
     *   Features extracted in parallel using Python's **`ProcessPoolExecutor`** running chunked batches of **50,000 URLs** simultaneously to maximize multi-core CPU efficiency.
 
 ### 🗣️ Presenter Script
-> *"Layers 5 and 6 form our Intelligence and DNA cores. We query live, authoritative global databases like Google Safe Browsing and AbuseIPDB in parallel. To guarantee speeds under 3 seconds without getting rate-limited, we sync bulk intelligence from OpenPhish and URLhaus daily into our local Supabase instance. For our URL Machine Learning model, we trained on the industry-standard Kaggle Malicious URLs dataset containing hundreds of thousands of active threats. To make the pipeline production-ready, we developed a high-speed parallel preprocessing pipeline using Python's ProcessPoolExecutor, which chunks the URLs into batches of 50,000 and extracts features across all CPU cores in parallel. This represents extreme, enterprise-level preprocessing speed."*
+> *"To ensure our intelligence is authoritative, we query live global databases like Google Safe Browsing and AbuseIPDB in parallel. To guarantee speeds under 3 seconds without getting rate-limited, we sync bulk intelligence from OpenPhish and URLhaus daily into our local Supabase instance. For our URL Machine Learning model, we trained on the industry-standard Kaggle Malicious URLs dataset containing hundreds of thousands of active threats. To make the pipeline production-ready, we developed a high-speed parallel preprocessing pipeline using Python's ProcessPoolExecutor, which chunks the URLs into batches of 50,000 and extracts features across all CPU cores in parallel. This represents extreme, enterprise-level preprocessing speed."*
 
 ---
 
-## Slide 10: Mathematical Model 3: Shannon Entropy
+## Slide 8: Random Forest URL Classifier: Exact Specifications
 ### 🖥️ Slide Content
-*   **Goal:** Measure the randomness/information density of a domain name to catch Domain Generation Algorithms (DGA).
-*   **Mathematical Equation:**
-    $$H(X) = - \sum_{i=1}^{|V|} P(x_i) \log_2 P(x_i)$$
-*   **Variables:**
-    *   $V$ is the unique vocabulary of symbols (characters) in the domain string $X$.
-    *   $P(x_i) = \frac{f(x_i)}{L}$ is the empirical probability of character $x_i$ appearing in the string of length $L$.
-*   **Threshold Scale:**
-    *   **$H(X) < 3.0$:** Standard structured domain (e.g., `google.com`). Very safe.
-    *   **$3.0 \le H(X) \le 4.2$:** Standard linguistic domain (e.g., `my-verification-portal.com`).
-    *   **$H(X) > 4.5$:** Highly random chaos (e.g., `c8910g-login.top`). Triggers a **High-Entropy Anomalous Domain** flag.
+*   **Exact Model Hyperparameters:**
+    *   Algorithm: `RandomForestClassifier` (Scikit-Learn).
+    *   Trees ($T$): **200 estimators** with a `max_depth` limit of **15** (prevents overfitting) and `min_samples_leaf=2`.
+    *   Split: **80% Training, 20% Evaluation** (seed `random_state=42`).
+*   **URL Features Extracted (20 Core Features):**
+    *   *Lexical:* `domain_age_days`, `keyword_count`, `entropy`, `subdomain_depth`, `url_length`, `hyphen_count`, `special_char_count`, `path_depth`, `percent_encoding_count`.
+    *   *Technical:* `is_https`, `tld_risk_score`, `numeric_substitution`, `double_slash_redirect`, `is_ip_address`, `v_c_ratio`, `consecutive_chars`, `is_shortened`, `has_non_standard_port`, `has_suspicious_extension`, `suspicious_subdomain`.
 
 ### 🗣️ Presenter Script
-> *"Shannon Entropy is a beautiful mathematical concept from information theory. It measures the entropy—or chaos—in a string of characters. Legitimate companies buy highly readable, linguistic domain names which have very low entropy. Attackers, however, use random strings like 'c8910g-login.top' which have high entropy. By calculating the probability of every character's occurrence and taking the negative binary logarithm sum, CyberBoyAI assigns an entropy score. Anything above 4.5 is flagged as an auto-generated threat signature."*
+> *"Here are the exact machine learning engineering details. We configured our Random Forest URL model with 200 estimator trees, capping the maximum depth to 15. This depth limit is critical to prevent overfitting on the training data. We split the data strictly into 80% training and 20% validation. When a URL is scanned, our backend extracts exactly 20 core mathematical features, including lexical indicators like subdomain depth and path depth, as well as technical anomalies like non-standard ports or suspicious file extensions. The forest processes these 20 vectors, voting to yield a final threat class probability."*
 
 ---
 
-## Slide 11: Layer 7 & 8: Playwright Sandbox & OpenAI Forensics
+## Slide 9: Playwright Sandbox & OpenAI Forensics
 ### 🖥️ Slide Content
 *   **Playwright Headless Chrome Sandbox:**
     *   Visits the target URL dynamically with **`java_script_enabled=False`** for ultimate safety against drive-by malware.
@@ -201,7 +163,7 @@ This guide aligns 100% with the *actual code implementation* in `ml_training/tra
 
 ---
 
-## Slide 12: Layer 9: Path-Aware Whitelisting (Cloud Abuse Defense)
+## Slide 10: Path-Aware Whitelisting (Cloud Abuse Defense)
 ### 🖥️ Slide Content
 *   **The Threat (Cloud Abuse):**
     *   Attackers host phishing forms on legitimate cloud infrastructure (Google Forms, Microsoft Forms, Notion, GitHub Pages).
@@ -216,45 +178,7 @@ This guide aligns 100% with the *actual code implementation* in `ml_training/tra
 
 ---
 
-## Slide 13: Mathematical Model 4: Random Forest Splits & Exact Features
-### 🖥️ Slide Content
-*   **Gini ImpuritySplit Criterion ($I_G$):**
-    $$I_G(p) = 1 - \sum_{i=1}^{J} p_i^2$$
-*   **Exact Model Hyperparameters:**
-    *   Algorithm: `RandomForestClassifier` (Scikit-Learn).
-    *   Trees ($T$): **200 estimators** with a `max_depth` limit of **15** (prevents overfitting) and `min_samples_leaf=2`.
-    *   Split: **80% Training, 20% Evaluation** (seed `random_state=42`).
-*   **URL Features Extracted (20 Core Features):**
-    *   *Lexical:* `domain_age_days`, `keyword_count`, `entropy`, `subdomain_depth`, `url_length`, `hyphen_count`, `special_char_count`, `path_depth`, `percent_encoding_count`.
-    *   *Technical:* `is_https`, `tld_risk_score`, `numeric_substitution`, `double_slash_redirect`, `is_ip_address`, `v_c_ratio`, `consecutive_chars`, `is_shortened`, `has_non_standard_port`, `has_suspicious_extension`, `suspicious_subdomain`.
-
-### 🗣️ Presenter Script
-> *"Here are the exact machine learning engineering details. We configured our Random Forest URL model with 200 estimator trees, capping the maximum depth to 15. This depth limit is critical to prevent overfitting on the training data. We split the data strictly into 80% training and 20% validation. When a URL is scanned, our backend extracts exactly 20 core mathematical features, including lexical indicators like subdomain depth and path depth, as well as technical anomalies like non-standard ports or suspicious file extensions. The forest processes these 20 vectors, voting to yield a final threat class probability."*
-
----
-
-## Slide 14: Mathematical Model 5: Consensus-Aware Weighted Fusion
-### 🖥️ Slide Content
-*   **Core Formula:**
-    $$S_{\text{final}} = \sum_{i \in \text{Agents}} w_i \cdot S_i + \text{Boosts}$$
-*   **Adaptive Weight Allocations:**
-    1.  **Agreement Zone ($|S_{\text{ML}} - S_{\text{AI}}| \le 0.30$):**
-        *   $w_{\text{lookup}} = 0.35, w_{\text{ML}} = 0.30, w_{\text{AI}} = 0.20, w_{\text{behavior}} = 0.15$
-    2.  **Conflict: ML is High, AI is Clean ($S_{\text{ML}} > S_{\text{AI}}$):**
-        *   OpenAI verified page is clean. Increase AI weight:
-        *   $w_{\text{lookup}} = 0.35, w_{\text{ML}} = 0.20, w_{\text{AI}} = 0.30, w_{\text{behavior}} = 0.15$
-    3.  **Conflict: AI is High, ML is Clean ($S_{\text{AI}} > S_{\text{ML}}$):**
-        *   OpenAI detected login form. Maximize AI weight:
-        *   $w_{\text{lookup}} = 0.30, w_{\text{ML}} = 0.15, w_{\text{AI}} = 0.40, w_{\text{behavior}} = 0.15$
-    4.  **DNS Offline / Unreachable ($S_{\text{status}} = 0$):**
-        *   $w_{\text{lookup}} = 0.10, w_{\text{ML}} = 0.45, w_{\text{AI}} = 0.35, w_{\text{behavior}} = 0.10$
-
-### 🗣️ Presenter Script
-> *"Our central Verdict Engine is where the magic happens. We use an adaptive multivariate weighted sum. If our agents agree, we use standard weights. But if there is a conflict—for example, if our URL structural model says 'Safe' but our AI DOM agent discovers a credential form on the page—the system dynamically shifts its weights, boosting the AI's influence to 40% and suppressing the ML. This mimics human expert logic, ensuring that visual proof of a phishing form overrides a clean URL structure."*
-
----
-
-## Slide 15: Local ML Risk vs. Global Confidence
+## Slide 11: Local ML Risk vs. Global Confidence
 ### 🖥️ Slide Content
 *   **Local ML Risk:**
     *   Measures the physical shape of the link.
@@ -273,7 +197,7 @@ This guide aligns 100% with the *actual code implementation* in `ml_training/tra
 
 ---
 
-## Slide 16: Key Defense Edge Cases & FAQ
+## Slide 12: Key Defense Edge Cases & FAQ
 ### 🖥️ Slide Content
 *   **"What if the website is currently offline?"**
     *   *Defense:* Playwright detects status codes ($0, 404, 403$). The system bypasses OpenAI API calls entirely to save API costs and returns a "Host Unreachable" warning.
@@ -287,7 +211,7 @@ This guide aligns 100% with the *actual code implementation* in `ml_training/tra
 
 ---
 
-## Slide 17: Future Work: Scaling to Enterprise Grade
+## Slide 13: Future Work: Scaling to Enterprise Grade
 ### 🖥️ Slide Content
 *   **1. Residential Proxy Integration (Anti-Cloaking):**
     *   *Upgrade:* Route Playwright chromium traffic through rotating residential ASNs (using our pre-configured `ProxyRotationManager`) to bypass adversary IP blocklists.
@@ -303,7 +227,7 @@ This guide aligns 100% with the *actual code implementation* in `ml_training/tra
 
 ---
 
-## Slide 18: Summary of Achievements
+## Slide 14: Summary of Achievements
 ### 🖥️ Slide Content
 *   **Live End-to-End Production:** Dockerized FastAPI on Render, React/Next.js dashboard on Vercel, Supabase PostgreSQL cloud tier.
 *   **9-Layer Security Architecture:** Consensus-aware weighted engine, vision OCR, linguistic NLP, and Sandboxed dynamic browsers.
