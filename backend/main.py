@@ -125,6 +125,10 @@ def verify_admin_key(x_admin_key: str = Header(None)):
         raise HTTPException(status_code=401, detail="Unauthorized")
     return x_admin_key
 
+@app.get("/")
+def read_root():
+    return {"message": "CyberBoyAI API is running"}
+
 @app.get("/health")
 def health_check():
     return {"status": "ok", "service": "CyberBoyAI", "version": "1.0"}
