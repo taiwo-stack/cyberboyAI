@@ -5,3 +5,7 @@ __pycache__
 node_modules
 .next
 *.joblib
+
+# Office and editor temporary files
+~$*
+.~lock.*
