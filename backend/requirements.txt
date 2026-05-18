@@ -13,3 +13,4 @@ joblib
 openai
 apscheduler
 slowapi
+huggingface_hub
