@@ -85,3 +85,21 @@ If someone asks a difficult question during your presentation, use these example
 *   *"What if the website is currently offline?"* → **The Fast-Path:** The OpenAI agent checks the HTTP status first. If it's a 404, it immediately aborts the LLM call to save API costs and returns a "Host Unreachable" verdict.
 *   *"What if a hacker uses bit.ly?"* → **Shortener Bypass Prevention:** The system recognizes shorteners and aggressively forces the Playwright agent to scan the final destination, completely stripping `bit.ly` of its "trusted" brand status.
 *   *"What if a hacker spoofs an email address?"* → **Header Regex:** The Email Agent parses raw email headers (`From:`, `Reply-To:`) and cross-references the domains. If `From` is PayPal but `Reply-To` is a random Russian domain, the system triggers a severe spoofing penalty.
+
+---
+
+## 7. Future Work: Scaling to Enterprise Grade
+Use this slide to discuss how CyberBoyAI can be upgraded from a high-quality indie platform to an enterprise-grade commercial security platform:
+
+1.  **Anti-Cloaking Engine (Residential Proxy Rotation):**
+    *   *The Problem:* Sophisticated threat actors actively block requests originating from Amazon Web Services (AWS) or standard hosting IP blocks to prevent security engines from scanning their landing pages.
+    *   *The Upgrade:* Activate our pre-configured `ProxyRotationManager` to route Playwright scans through rotating residential ASNs (Comcast, Verizon, AT&T). This forces the phishing kit to think a real home user is visiting, fully exposing the credentials-harvesting forms.
+2.  **Closed-Loop Machine Learning Pipelines (Active Learning):**
+    *   *The Problem:* Phishing URL structures shift dynamically as attackers find new character combinations (Model Drift).
+    *   *The Upgrade:* Integrate automated monthly retraining pipelines. Every month, the system automatically pulls newly confirmed threats from our Supabase community DB, retrains the Random Forest (`model.joblib`), and redeploys the classification weights with zero downtime.
+3.  **Automated CAPTCHA & Cloudflare Solver Integration:**
+    *   *The Problem:* Attackers place Cloudflare Turnstile or Google reCAPTCHA walls in front of their phishing forms so headless scrapers get stuck on the homepage.
+    *   *The Upgrade:* Deploy automated CAPTCHA solving modules (e.g., using AI-based visual solvers or scraping integration tools) to automatically bypass gateway checkpoints and capture the hidden forms behind the security wall.
+4.  **Decentralized Threat Intel Feed Sync:**
+    *   *The Upgrade:* Integrate decentralized, real-time blockchain-based threat feeds or commercial APIs (like VirusTotal premium or Palo Alto WildFire) to expand lookup coverage into proprietary enterprise databases.
+
