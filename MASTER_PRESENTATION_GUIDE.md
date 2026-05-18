@@ -2,13 +2,11 @@
 
 This document is the **absolute master blueprint** for CyberBoyAI. It merges, refines, and synthesizes every single piece of technical architecture, machine learning preprocess/training details, mathematical models, security proofs, and implementation guides into a unified, slide-by-slide structure. 
 
-Use this master guide as your exact script and slide contents for your presentation.
+This guide aligns 100% with the *actual code implementation* in `ml_training/train.py` and `preprocess.py`, including exact datasets, hyperparameters, features, and model configurations.
 
 ---
 
 # PART 1: SLIDE-BY-SLIDE PRESENTATION DECK
-
-This section outlines your entire slide presentation. For every slide, you have the **Visual Layout Content** (exactly what to write on the slide) and the **Presenter Script** (exactly what you should say out loud).
 
 ---
 
@@ -61,10 +59,10 @@ This section outlines your entire slide presentation. For every slide, you have 
 *   **Backend Engine:** Python, FastAPI, AsyncIO (high-concurrency, non-blocking requests).
 *   **Data Tier:** Supabase PostgreSQL (Periodic scheduler cache, community reports).
 *   **AI & Scraper:** OpenAI GPT-4o-mini & GPT-4o-Vision, Playwright (Headless Chromium).
-*   **Machine Learning:** Scikit-Learn (Random Forest Models, TF-IDF NLP pipelines).
+*   **Machine Learning (Multi-Class Classification):** Scikit-Learn (Random Forest Models mapping URLs to four classes: `benign`, `phishing`, `malware`, and `defacement`).
 
 ### 🗣️ Presenter Script
-> *"Here is how CyberBoyAI is built. The user interacts with a premium, high-speed Next.js React frontend hosted on Vercel. When a threat is submitted, it securely pings a Dockerized FastAPI Python backend deployed on Render. Under the hood, the backend runs asynchronous pipelines using Python's AsyncIO, querying our Supabase database, calling live OSINT feeds, running our custom machine learning models, and spawning Playwright headless browsers to scrape target pages—all in parallel in under 3 seconds."*
+> *"Here is how CyberBoyAI is built. The user interacts with a premium, high-speed Next.js React frontend hosted on Vercel. When a threat is submitted, it securely pings a Dockerized FastAPI Python backend deployed on Render. Under the hood, the backend runs asynchronous pipelines using Python's AsyncIO, querying our Supabase database, calling live OSINT feeds, running our custom machine learning models, and spawning Playwright headless browsers to scrape target pages—all in parallel in under 3 seconds. The machine learning agent uses a highly-tuned multi-class classification model, identifying not just phishing, but malware and defacement attacks as well."*
 
 ---
 
@@ -75,7 +73,7 @@ This section outlines your entire slide presentation. For every slide, you have 
 *   **Layer 3: URL Redirect Unshortener:** Recursively follows redirects (e.g., `bit.ly` hops) to find true endpoints.
 *   **Layer 4: Fuzzy Brand Protection:** Brand typosquatting and homoglyph detection (Levenshtein).
 *   **Layer 5: OSINT Blacklist Intelligence:** Multi-source lookup (Safe Browsing, URLhaus, OpenPhish, AbuseIPDB, OTX).
-*   **Layer 6: Structural DNA Agent:** Random Forest analysis of 17 structural features of the URL.
+*   **Layer 6: Structural DNA Agent:** Random Forest analysis of 20 structural features of the URL.
 *   **Layer 7: Playwright Behavioral Sandbox:** Safely visits and inspects live page behaviors without executing JS.
 *   **Layer 8: OpenAI DOM Forensic Analysis:** Inspects the raw visual and text structure of the page for phishing kits.
 *   **Layer 9: Path-Aware Whitelisting:** Prevents cloud abuse (trusted domains hosting deep-path malicious forms).
@@ -85,18 +83,18 @@ This section outlines your entire slide presentation. For every slide, you have 
 
 ---
 
-## Slide 5: Layer 1 & 2: Vision OCR & Linguistic NLP Engine
+## Slide 5: Layer 1 & 2: Vision OCR & Linguistic NLP Engine (Email Preprocessing)
 ### 🖥️ Slide Content
 *   **Visual Phishing (OCR & QR Decoding):**
     *   Hackers put malicious links inside visual QR codes ("Qishing") or embed fake invoices in screenshots to bypass text filters.
     *   CyberBoyAI uses **GPT-4o-Vision** to extract links and analyze the visual intent of images.
 *   **Linguistic NLP Forensics (Email/SMS Phishing):**
     *   Analyzes the email/message body to detect urgency, fear, and manipulation.
-    *   Converts raw text into a numerical matrix using **TF-IDF Vectorization**.
-    *   Feeds the vector into a custom **Random Forest Classifier** trained on the **SpamAssassin & Nazario corpora**.
+    *   **Unified Training Corpus:** Merged the **Apache SpamAssassin Corpus** (`easy_ham`, `easy_ham_2`, `hard_ham`, `spam`, `spam_2`) with the **Zenodo SpamAssassin Dataset**.
+    *   **Preprocessing Pipeline:** Parses `.eml` files dynamically, extracts HTML text, decodes text/plain MIME segments, performs UTF-8 cleaning, and removes duplicate bodies to prevent model overfitting.
 
 ### 🗣️ Presenter Script
-> *"Let's talk about the first two layers: Vision and Phrasing. Attackers are smart—they hide links inside QR codes in emails, a technique known as 'Qishing'. CyberBoyAI immediately runs optical character recognition and QR decoding using vision AI to extract the true text. If the input is an email or SMS, our Linguistic Engine converts the text into a mathematical matrix using TF-IDF. This matrix is evaluated by a custom Random Forest model trained on thousands of confirmed scam emails to spot manipulation tactics like urgent account suspensions or fake BVN updates."*
+> *"Let's talk about the first two layers: Vision and Phrasing. Attackers are smart—they hide links inside QR codes in emails, a technique known as 'Qishing'. CyberBoyAI immediately runs optical character recognition and QR decoding using vision AI to extract the true text. If the input is an email or SMS, our Linguistic Engine converts the text into a mathematical matrix. We built a unified training corpus by merging the Apache SpamAssassin dataset with the Zenodo SpamAssassin CSV data. The preprocessing script automatically parses raw email headers, decodes text/plain MIME segments, scrubs out formatting junk, and deduplicates the emails by body. This guarantees our machine learning model only trains on unique, high-fidelity semantic content."*
 
 ---
 
@@ -153,18 +151,19 @@ This section outlines your entire slide presentation. For every slide, you have 
 
 ---
 
-## Slide 9: Layer 5 & 6: OSINT Intelligence & Structural DNA
+## Slide 9: Layer 5 & 6: OSINT Intelligence & URL Dataset Pipeline
 ### 🖥️ Slide Content
-*   **Authoritative OSINT Threat Integration:**
+*   **Live OSINT & Caching:**
     *   Queries **Google Safe Browsing** (Live API), **AbuseIPDB** (IP Reputation), and **AlienVault OTX** (Threat Pulse Counts) in parallel.
-    *   **OpenPhish & URLhaus Caching:** To prevent severe API rate limits and slow execution speeds, CyberBoyAI synchronizes bulk free feeds daily into a local Supabase PostgreSQL table (`phishtank_cache`).
-*   **Structural DNA Agent:**
-    *   Extracts **17 structural features** from the raw URL (subdomain depth, TLD risk, digit ratio, length).
-    *   Calculates **Shannon Entropy** to check for domain randomness.
-    *   Classifies the structural features using a custom **Random Forest Classifier** trained on 10,000+ threat links and Tranco Top domains.
+    *   Synchronizes bulk threat feeds (OpenPhish, URLhaus) daily into a local Supabase PostgreSQL database.
+*   **URL ML Model Dataset:**
+    *   Trained on the highly respected Kaggle dataset: **`sid321axn/malicious-urls-dataset`**.
+    *   Contains hundreds of thousands of records spanning 4 classes (`benign`, `phishing`, `malware`, `defacement`).
+*   **High-Speed Feature Extraction:**
+    *   Features extracted in parallel using Python's **`ProcessPoolExecutor`** running chunked batches of **50,000 URLs** simultaneously to maximize multi-core CPU efficiency.
 
 ### 🗣️ Presenter Script
-> *"Layers 5 and 6 form our Intelligence and DNA cores. We query live, authoritative global databases like Google Safe Browsing and AbuseIPDB in parallel. To guarantee speeds under 3 seconds without getting rate-limited, we sync bulk intelligence from OpenPhish and URLhaus daily into our local Supabase instance. We also inspect what we call the 'Structural DNA' of the URL. Using our ML Agent, we extract 17 key features from the URL string, such as the character length, subdomain depth, and Shannon Entropy, which measures domain randomness. This allows us to mathematically identify auto-generated domain structures common in botnets."*
+> *"Layers 5 and 6 form our Intelligence and DNA cores. We query live, authoritative global databases like Google Safe Browsing and AbuseIPDB in parallel. To guarantee speeds under 3 seconds without getting rate-limited, we sync bulk intelligence from OpenPhish and URLhaus daily into our local Supabase instance. For our URL Machine Learning model, we trained on the industry-standard Kaggle Malicious URLs dataset containing hundreds of thousands of active threats. To make the pipeline production-ready, we developed a high-speed parallel preprocessing pipeline using Python's ProcessPoolExecutor, which chunks the URLs into batches of 50,000 and extracts features across all CPU cores in parallel. This represents extreme, enterprise-level preprocessing speed."*
 
 ---
 
@@ -217,19 +216,20 @@ This section outlines your entire slide presentation. For every slide, you have 
 
 ---
 
-## Slide 13: Mathematical Model 4: Random Forest Splits
+## Slide 13: Mathematical Model 4: Random Forest Splits & Exact Features
 ### 🖥️ Slide Content
-*   **Training Objective:** Minimize impurity to separate safe domains from phishing links.
-*   **Node Selection: Gini Impurity ($I_G$):**
+*   **Gini ImpuritySplit Criterion ($I_G$):**
     $$I_G(p) = 1 - \sum_{i=1}^{J} p_i^2$$
-    *   *Where $p_i$ is the ratio of class $i$ samples at the node. A Gini of 0.0 means perfect class separation.*
-*   **Aggregated Probability Ensemble Voting:**
-    *   The Random Forest combines the probability outputs of $T$ independent decision trees to generate a smooth classification score:
-    $$P(y = c \mid x) = \frac{1}{T} \sum_{t=1}^{T} P_t(y = c \mid x)$$
-    *   *Where $P_t(y=c | x)$ is the probability assigned by the $t$-th individual tree.*
+*   **Exact Model Hyperparameters:**
+    *   Algorithm: `RandomForestClassifier` (Scikit-Learn).
+    *   Trees ($T$): **200 estimators** with a `max_depth` limit of **15** (prevents overfitting) and `min_samples_leaf=2`.
+    *   Split: **80% Training, 20% Evaluation** (seed `random_state=42`).
+*   **URL Features Extracted (20 Core Features):**
+    *   *Lexical:* `domain_age_days`, `keyword_count`, `entropy`, `subdomain_depth`, `url_length`, `hyphen_count`, `special_char_count`, `path_depth`, `percent_encoding_count`.
+    *   *Technical:* `is_https`, `tld_risk_score`, `numeric_substitution`, `double_slash_redirect`, `is_ip_address`, `v_c_ratio`, `consecutive_chars`, `is_shortened`, `has_non_standard_port`, `has_suspicious_extension`, `suspicious_subdomain`.
 
 ### 🗣️ Presenter Script
-> *"For our core machine learning, we chose Random Forest Classifiers over Deep Neural Networks. Why? Because Neural Networks are 'black boxes'—they cannot explain their decisions. In cybersecurity, compliance and auditing require explainability. A Random Forest splits nodes by mathematically minimizing the Gini Impurity, building hundreds of transparent decision trees. At runtime, the forest aggregates the probability distributions across all trees to calculate a smooth, highly calibrated threat risk score between 0.0 and 1.0."*
+> *"Here are the exact machine learning engineering details. We configured our Random Forest URL model with 200 estimator trees, capping the maximum depth to 15. This depth limit is critical to prevent overfitting on the training data. We split the data strictly into 80% training and 20% validation. When a URL is scanned, our backend extracts exactly 20 core mathematical features, including lexical indicators like subdomain depth and path depth, as well as technical anomalies like non-standard ports or suspicious file extensions. The forest processes these 20 vectors, voting to yield a final threat class probability."*
 
 ---
 
@@ -275,7 +275,7 @@ This section outlines your entire slide presentation. For every slide, you have 
 
 ## Slide 16: Key Defense Edge Cases & FAQ
 ### 🖥️ Slide Content
-*   **"What if the target website is currently offline?"**
+*   **"What if the website is currently offline?"**
     *   *Defense:* Playwright detects status codes ($0, 404, 403$). The system bypasses OpenAI API calls entirely to save API costs and returns a "Host Unreachable" warning.
 *   **"What if a hacker hides a link inside a visual button in an email?"**
     *   *Defense:* Our Chrome Extension runs **Deep DOM Extraction** which scrapes raw webmail HTML, follows hidden anchors, and pulls all `href` links for scanning.
