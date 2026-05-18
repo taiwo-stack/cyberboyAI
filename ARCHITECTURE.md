@@ -129,14 +129,18 @@ Runs 4 lookups in parallel:
 
 | Source | What it checks |
 |---|---|
-| **PhishTank/URLhaus cache** | Local Supabase `phishtank_cache` table (Periodic Sync) |
+| **OpenPhish/URLhaus cache** | Local Supabase `phishtank_cache` table (Daily Background Sync) |
 | **Google Safe Browsing** | Live API query for immediate global blacklisting |
-| **AbuseIPDB** | IP reputation (resolves hostname first) |
-| **AlienVault OTX** | Global threat pulse count |
+| **AbuseIPDB** | Live API IP reputation (resolves hostname first) |
+| **AlienVault OTX** | Live API global threat pulse count |
 | **Community Threats** | Confirmed community-reported domains in Supabase |
 
-**Live API vs Local DB Syncing:**
-To prevent rate-limiting and maximize performance, feeds like PhishTank and URLhaus are synced to a local database periodically. If a threat was reported minutes ago, the local snapshot may not have it. However, **Google Safe Browsing** is queried via a Live API, ensuring that extremely fresh global threats are caught immediately. If both fail, the AI/ML layers process the zero-day threat.
+**Industry-Standard Hybrid Threat Architecture:**
+To prevent rate-limiting and maximize speed (preventing 10+ second lookup delays), bulk free threat feeds like **OpenPhish** and **URLhaus** are synced to a local database once a day. They do not offer free real-time APIs. 
+
+Because of this daily caching, a brand-new threat reported 5 minutes ago won't be in the database yet. To counter this, CyberBoyAI uses a **Defense-in-Depth** hybrid approach:
+1. **Live APIs:** Extremely fast threat APIs like **Google Safe Browsing** and **AbuseIPDB** are pinged in real-time.
+2. **Machine Learning:** If a zero-day threat slips past both the daily cache and the live APIs, the **ML Agent** acts as the ultimate real-time shield by detecting the mathematical anomalies of the phishing URL, requiring no database lookup at all.
 
 Results are cached (AbuseIPDB: 24h, OTX: 6h) to reduce external API calls.
 All HTTP calls have a **10-second timeout**.

@@ -149,7 +149,7 @@ class LookupAgent:
 
             if phishtank_hit:
                 db_score += 0.60
-                sources_flagged.append("PhishTank/URLhaus")
+                sources_flagged.append("OpenPhish/URLhaus")
 
             if otx_hit:
                 db_score += otx_weight
@@ -185,7 +185,7 @@ class LookupAgent:
                 finding = (
                     "Global Reputation Check: "
                     f"Google Safe Browsing (CLEAN) | "
-                    f"PhishTank/OpenPhish (NOT FOUND) | "
+                    f"OpenPhish/URLhaus (NOT FOUND) | "
                     f"AbuseIPDB Confidence ({abuse_score}%) | "
                     f"OTX Pulses ({otx_pulse_count}) | "
                     f"Community (UNREPORTED)."

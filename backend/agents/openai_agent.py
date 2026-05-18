@@ -202,6 +202,8 @@ ML Score: {ml_score}
             "2. DO NOT use similarity or 'feel' to identify brands for unreachable sites. If in doubt, set identified_brand to null.\n"
             "3. For reachable sites, extract the 'identified_brand' only if it is explicitly stated in the page content or logos.\n"
             "4. NEVER guess generic brands like 'walmart' or 'amazon' from ambiguous strings if the site is unreachable.\n\n"
+            "EXPLANATION GUIDELINE:\n"
+            "The 'explanation' field must be a comprehensive, descriptive summary of ALL your findings. Do not limit it to just brand comparison. You must integrate the ML score, URL structural anomalies (from the context), and page content evaluation into a cohesive forensic summary.\n\n"
             "Respond ONLY with valid JSON:\n"
             "{\n"
             "  \"openai_score\": float (0.0-1.0),\n"
