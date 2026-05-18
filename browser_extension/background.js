@@ -1,3 +1,6 @@
+// Set to 'http://localhost:8000' for local development
+const BACKEND_URL = 'https://cyberboyai.onrender.com';
+
 chrome.contextMenus.create({
   id: "analyze-link",
   title: "Analyze Threat with CyberBoyAI",
@@ -15,7 +18,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
       message: "Analyzing: " + target
     });
 
-    fetch('http://localhost:8000/analyze', {
+    fetch(`${BACKEND_URL}/analyze`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ input: target, source: 'extension_context' })

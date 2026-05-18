@@ -1,3 +1,6 @@
+// Set to 'http://localhost:8000' for local development
+const BACKEND_URL = 'https://cyberboyai.onrender.com';
+
 document.addEventListener('DOMContentLoaded', function() {
   const scanBtn = document.getElementById('scan-btn');
   const loadingDiv = document.getElementById('loading');
@@ -61,8 +64,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       }
 
-      // Call Local Backend
-      const response = await fetch('http://localhost:8000/analyze', {
+      // Call Backend
+      const response = await fetch(`${BACKEND_URL}/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ input: payload, source: 'extension' })

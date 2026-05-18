@@ -78,7 +78,7 @@ export default function Home() {
       if (result.verdict !== "SAFE") {
         const newHist: HistoryItem = {
           id: (Date.now() + 2).toString(),
-          url: input.length > 35 ? input.substring(0, 32) + "..." : input,
+          url: input,
           verdict: result.verdict,
           timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
         };
@@ -137,7 +137,11 @@ export default function Home() {
                 Threat History
               </div>
               {history.map((h) => (
-                <button key={h.id} className="w-full text-left bg-slate-900/50 hover:bg-slate-800/80 border border-transparent hover:border-slate-700/50 p-3 rounded-xl transition-all flex flex-col gap-1.5 focus:outline-none">
+                <button 
+                  key={h.id} 
+                  onClick={() => handleScan(h.url)}
+                  className="w-full text-left bg-slate-900/50 hover:bg-slate-800/80 border border-transparent hover:border-slate-700/50 p-3 rounded-xl transition-all flex flex-col gap-1.5 focus:outline-none"
+                >
                   <div className="flex items-center justify-between">
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${h.verdict === 'DANGEROUS' ? 'bg-red-500/20 text-red-500' : h.verdict === 'INVALID DOMAIN' ? 'bg-slate-500/20 text-slate-400' : 'bg-amber-500/20 text-amber-500'}`}>
                       {h.verdict}
