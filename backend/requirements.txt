@@ -8,7 +8,7 @@ playwright
 python-whois
 tldextract
 python-Levenshtein
-scikit-learn
+scikit-learn==1.6.1
 joblib
 openai
 apscheduler
