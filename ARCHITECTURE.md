@@ -1,4 +1,4 @@
-# CyberBoyAI — System Documentation
+﻿# CyberBoyAI — System Documentation
 
 > A multi-agent cybersecurity threat detection platform protecting Nigerian fintech users from phishing, typosquatting, and malicious URLs.
 
@@ -32,7 +32,7 @@ User Input (URL / IP / domain)
     │              TIER 1 (parallel)               │
     ├────────────────────────────────────────────┐ │
     │ BrandAgent │ LookupAgent │ MLAgent (URL) │ │
-    │               EmailAgent (Text)          │ │
+    │               EmailAgent (Text)(Email       )  │ │
     └──────────────┴─────────────┴─────────────┴─┘
          │
     (if ML ambiguous OR brand unconfirmed)
@@ -486,3 +486,4 @@ A `trusted_domains` Supabase table was introduced as a temporary bypass. For dom
 3. Explore using OTX's `pulse_count` and `adversary` metadata to distinguish high-confidence vs stale historical reports.
 
 ---
+
