@@ -105,28 +105,29 @@ class BehavioralAnalyzer:
         try:
             with sync_playwright() as p:
                 browser = p.chromium.launch(headless=True)
-                # Use a standard mobile UA to look more like a real user
-                context = browser.new_context(
-                    user_agent="Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1",
-                    viewport={"width": 390, "height": 844}
-                )
-                page = context.new_page()
-                
-                # Faster timeout: 10s is enough for modern networks
-                page.goto(url, timeout=10000, wait_until="domcontentloaded")
-                
-                results["html"] = page.content()
-                results["text"] = page.evaluate("() => document.body ? document.body.innerText : ''")
-                
-                # Detect login fields
-                password_fields = page.query_selector_all('input[type="password"]')
-                if password_fields:
-                    results["has_password_field"] = True
-                    results["evidence"].append("Login interface detected.")
+                try:
+                    # Use a standard mobile UA to look more like a real user
+                    context = browser.new_context(
+                        user_agent="Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1",
+                        viewport={"width": 390, "height": 844}
+                    )
+                    page = context.new_page()
+                    
+                    # Faster timeout: 10s is enough for modern networks
+                    page.goto(url, timeout=10000, wait_until="domcontentloaded")
+                    
+                    results["html"] = page.content()
+                    results["text"] = page.evaluate("() => document.body ? document.body.innerText : ''")
+                    
+                    # Detect login fields
+                    password_fields = page.query_selector_all('input[type="password"]')
+                    if password_fields:
+                        results["has_password_field"] = True
+                        results["evidence"].append("Login interface detected.")
 
-                results["scripts_count"] = len(page.query_selector_all('script'))
-                
-                browser.close()
+                    results["scripts_count"] = len(page.query_selector_all('script'))
+                finally:
+                    browser.close()
         except Exception as e:
             results["error"] = str(e)
             results["evidence"].append(f"Browser scan partially failed: {str(e)[:50]}")

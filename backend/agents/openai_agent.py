@@ -32,52 +32,55 @@ class OpenAIAgent:
         try:
             with sync_playwright() as p:
                 browser = p.chromium.launch(headless=True)
-                context_kwargs = {
-                    "user_agent": random.choice(_USER_AGENTS),
-                    "java_script_enabled": False,
-                }
-                
-                proxy_conf = proxy_manager.get_playwright_proxy()
-                if proxy_conf:
-                    context_kwargs["proxy"] = proxy_conf
-
-                context = browser.new_context(**context_kwargs)
-                page = context.new_page()
-
                 try:
-                    response = page.goto(url, timeout=15000, wait_until="domcontentloaded")
-                    status = response.status if response else 200
-                except Exception as e:
-                    print(f"Playwright navigation error for {url}: {e}")
-                    status = 0
-                
-                title = ""
-                try: title = page.title()
-                except: pass
+                    context_kwargs = {
+                        "user_agent": random.choice(_USER_AGENTS),
+                        "java_script_enabled": False,
+                    }
                     
-                html_content = ""
-                try: html_content = page.content()
-                except: pass
-                    
-                text = ""
-                try: 
-                    text = page.evaluate("() => document.body.innerText")
-                    text = text[:2500] if text else ""
-                except: pass
-                    
-                forms = 0
-                try:
-                    forms = page.locator("input[type=password]").count()
-                except: pass
-                    
-                meta_desc = ""
-                try:
-                    meta_loc = page.locator("meta[name=description]")
-                    if meta_loc.count() > 0:
-                        meta_desc = meta_loc.first.get_attribute("content") or ""
-                except: pass
+                    proxy_conf = proxy_manager.get_playwright_proxy()
+                    if proxy_conf:
+                        context_kwargs["proxy"] = proxy_conf
 
-                browser.close()
+                    context = browser.new_context(**context_kwargs)
+                    page = context.new_page()
+
+                    try:
+                        response = page.goto(url, timeout=15000, wait_until="domcontentloaded")
+                        status = response.status if response else 200
+                    except Exception as e:
+                        print(f"Playwright navigation error for {url}: {e}")
+                        status = 0
+                    
+                    title = ""
+                    try: title = page.title()
+                    except: pass
+                        
+                    html_content = ""
+                    try: html_content = page.content()
+                    except: pass
+                        
+                    text = ""
+                    try: 
+                        text = page.evaluate("() => document.body.innerText")
+                        text = text[:2500] if text else ""
+                    except: pass
+                        
+                    forms = 0
+                    try:
+                        forms = page.locator("input[type=password]").count()
+                    except: pass
+                        
+                    meta_desc = ""
+                    try:
+                        meta_loc = page.locator("meta[name=description]")
+                        if meta_loc.count() > 0:
+                            meta_desc = meta_loc.first.get_attribute("content") or ""
+                    except: pass
+
+                finally:
+                    browser.close()
+                    
                 return {
                     "title": title,
                     "text": text,
