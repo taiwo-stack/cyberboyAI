@@ -15,7 +15,7 @@ Required environment variables (set in Render/Vercel/etc dashboard):
     SUPABASE_URL
     SUPABASE_SERVICE_KEY
     HF_TOKEN      <- Hugging Face read token
-    HF_REPO_ID    <- e.g. "taiwo-stack/cyberboyai-models"
+    HF_REPO_ID    <- e.g. "taiwo-stack/gaudon-models"
 """
 
 import os, sys

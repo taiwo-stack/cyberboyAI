@@ -1,0 +1,83 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'GaudOn Backend EC2 Deployment'
+
+Parameters:
+  InstanceType:
+    Type: String
+    Default: t3.medium
+    Description: EC2 instance type (t3.medium recommended for ML/Playwright)
+  GitHubRepoUrl:
+    Type: String
+    Default: 'https://github.com/taiwo-stack/GaudOn.git'
+    Description: The GitHub repository to clone
+  LatestAmiId:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64'
+    Description: Dynamically fetches the latest Amazon Linux 2023 AMI
+
+Resources:
+  BackendSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: 'Allow HTTP, HTTPS, and SSH traffic'
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 8000
+          ToPort: 8000
+          CidrIp: 0.0.0.0/0
+
+  BackendInstance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: !Ref LatestAmiId
+      SecurityGroupIds:
+        - !Ref BackendSecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          # Update OS and install Docker and Git
+          dnf update -y
+          dnf install -y docker git
+          systemctl start docker
+          systemctl enable docker
+          
+          # Add ec2-user to docker group
+          usermod -a -G docker ec2-user
+          
+          # Install Docker Compose
+          curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          chmod +x /usr/local/bin/docker-compose
+          
+          # Clone repository
+          cd /home/ec2-user
+          git clone ${GitHubRepoUrl} app
+          cd app/backend
+          
+          # Build and run the backend Docker container
+          # Note: We run it on port 80 to make it publicly accessible without specifying the port in the browser
+          docker build -t gaudon-backend .
+          docker run -d --name backend -p 80:8000 gaudon-backend
+          
+          # Ensure container restarts on reboot
+          docker update --restart unless-stopped backend
+
+Outputs:
+  PublicIp:
+    Description: 'Public IP of the Backend Instance'
+    Value: !GetAtt BackendInstance.PublicIp
+  BackendUrl:
+    Description: 'API Base URL for the Backend'
+    Value: !Sub 'http://${BackendInstance.PublicIp}'

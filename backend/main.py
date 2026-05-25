@@ -90,7 +90,7 @@ async def lifespan(app: FastAPI):
     yield
     stop_scheduler()
 
-app = FastAPI(title="CyberBoyAI API", lifespan=lifespan)
+app = FastAPI(title="GaudOn API", lifespan=lifespan)
 
 _raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:3001,http://localhost:8080")
 _allowed_origins = [o.strip() for o in _raw_origins.split(",") if o.strip()]
@@ -127,11 +127,11 @@ def verify_admin_key(x_admin_key: str = Header(None)):
 
 @app.get("/")
 def read_root():
-    return {"message": "CyberBoyAI API is running"}
+    return {"message": "GaudOn API is running"}
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "service": "CyberBoyAI", "version": "1.0"}
+    return {"status": "ok", "service": "GaudOn", "version": "1.0"}
 
 @app.post("/analyze")
 @limiter.limit("30/minute")

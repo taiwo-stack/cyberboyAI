@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "CyberBoyAI - Threat Protection",
+  title: "GaudOn - Threat Protection",
   description: "Advanced AI link and message scanning.",
 };
 

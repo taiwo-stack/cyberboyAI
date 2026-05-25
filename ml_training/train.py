@@ -38,7 +38,7 @@ def _extract_worker(url_label_tuple):
     return None
 
 def main():
-    print("--- CyberBoyAI ML Trainer v3 (Multi-Class) ---", flush=True)
+    print("--- GaudOn ML Trainer v3 (Multi-Class) ---", flush=True)
     
     # 1. Download Kaggle Dataset
     print("Downloading sid321axn/malicious-urls-dataset...", flush=True)

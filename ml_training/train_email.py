@@ -9,7 +9,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report
 
 def main():
-    print("--- CyberBoyAI Email Phishing Model Trainer ---", flush=True)
+    print("--- GaudOn Email Phishing Model Trainer ---", flush=True)
     
     # 1. Load Data
     data_path = os.path.join("ml_training", "data", "processed", "unified_emails.csv")

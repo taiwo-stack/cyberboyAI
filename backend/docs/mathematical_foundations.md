@@ -1,6 +1,6 @@
-# CyberBoyAI — Mathematical Foundations & Logic Models
+# GaudOn — Mathematical Foundations & Logic Models
 
-This document serves as the formal mathematical specification of the threat detection pipelines running in the **CyberBoyAI** engine. It outlines every equation, logic model, algorithmic optimization, and security proof used to compute threat scores, identify brand impersonation, perform linguistic forensics, and maintain consensus.
+This document serves as the formal mathematical specification of the threat detection pipelines running in the **GaudOn** engine. It outlines every equation, logic model, algorithmic optimization, and security proof used to compute threat scores, identify brand impersonation, perform linguistic forensics, and maintain consensus.
 
 ---
 

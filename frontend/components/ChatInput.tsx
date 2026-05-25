@@ -121,7 +121,7 @@ export default function ChatInput({ onSubmit, loading }: ChatInputProps) {
         </div>
       </form>
       <div className="text-center mt-2 text-xs text-slate-500 font-medium">
-        CyberBoyAI can make mistakes. Consider checking important links directly with the issuing organization.
+        GaudOn can make mistakes. Consider checking important links directly with the issuing organization.
       </div>
     </div>
   );

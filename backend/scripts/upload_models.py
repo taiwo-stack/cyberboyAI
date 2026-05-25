@@ -16,7 +16,7 @@ Required env vars in backend/.env:
     SUPABASE_URL
     SUPABASE_SERVICE_KEY
     HF_TOKEN          <- Hugging Face write token  (https://huggingface.co/settings/tokens)
-    HF_REPO_ID        <- e.g. "taiwo-stack/cyberboyai-models"
+    HF_REPO_ID        <- e.g. "taiwo-stack/gaudon-models"
 """
 
 import os, sys

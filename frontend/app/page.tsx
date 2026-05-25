@@ -35,7 +35,7 @@ export default function Home() {
       {
         id: "msg-welcome",
         role: "ai",
-        content: "System online. I am **CyberBoyAI**, your dedicated multi-agent cybersecurity sentry.\n\nDrop a suspicious screenshot, forward a deceptive email, or paste a malicious URL below. I will instantly tear the threat apart using my 9-Layer Defense-in-Depth pipeline—analyzing everything from linguistic intent and structural machine learning down to the live execution code.",
+        content: "System online. I am **GaudOn**, your dedicated multi-agent cybersecurity sentry.\n\nDrop a suspicious screenshot, forward a deceptive email, or paste a malicious URL below. I will instantly tear the threat apart using my 9-Layer Defense-in-Depth pipeline—analyzing everything from linguistic intent and structural machine learning down to the live execution code.",
       }
     ]);
 
@@ -89,7 +89,7 @@ export default function Home() {
 
     } catch (err: any) {
       setError(err.message || "Failed to analyze input. Ensure the backend is active.");
-      setMessages((prev) => [...prev, { id: Date.now().toString(), role: "ai", content: `**Error:** ${err.message || "Could not connect to the CyberBoyAI backend pipeline."}` }]);
+      setMessages((prev) => [...prev, { id: Date.now().toString(), role: "ai", content: `**Error:** ${err.message || "Could not connect to the GaudOn backend pipeline."}` }]);
     } finally {
       setLoading(false);
     }
@@ -116,7 +116,7 @@ export default function Home() {
             <ShieldCheck className="w-5 h-5 text-white" />
           </div>
           <h1 className="text-lg font-bold tracking-tight bg-gradient-to-r from-blue-100 to-slate-400 bg-clip-text text-transparent">
-            CyberBoyAI
+            GaudOn
           </h1>
         </div>
 
@@ -169,7 +169,7 @@ export default function Home() {
           <div className="bg-blue-600 rounded-md p-1.5 shadow-[0_0_15px_rgba(37,99,235,0.4)]">
             <ShieldCheck className="w-5 h-5 text-white" />
           </div>
-          <h1 className="font-bold tracking-tight text-slate-200">CyberBoyAI</h1>
+          <h1 className="font-bold tracking-tight text-slate-200">GaudOn</h1>
         </header>
 
         {/* Chat Feed */}

@@ -1,4 +1,4 @@
-# CyberBoyAI — Scoring Architecture & Logic
+# GaudOn — Scoring Architecture & Logic
 
 This document explains the mathematical and logical distinction between **Local Agent Risk** and **Global System Confidence**.
 

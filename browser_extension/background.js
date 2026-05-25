@@ -1,9 +1,9 @@
 // Set to 'http://localhost:8000' for local development
-const BACKEND_URL = 'https://cyberboyai.onrender.com';
+const BACKEND_URL = 'https://gaudon.onrender.com';
 
 chrome.contextMenus.create({
   id: "analyze-link",
-  title: "Analyze Threat with CyberBoyAI",
+  title: "Analyze Threat with GaudOn",
   contexts: ["link", "selection"]
 });
 
@@ -14,7 +14,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     chrome.notifications.create({
       type: "basic",
       iconUrl: "icons/icon48.png",
-      title: "CyberBoyAI Analysis Started",
+      title: "GaudOn Analysis Started",
       message: "Analyzing: " + target
     });
 

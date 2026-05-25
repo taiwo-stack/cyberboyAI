@@ -1,5 +1,5 @@
 // Set to 'http://localhost:8000' for local development
-const BACKEND_URL = 'https://cyberboyai.onrender.com';
+const BACKEND_URL = 'https://gaudon.onrender.com';
 
 document.addEventListener('DOMContentLoaded', function() {
   const scanBtn = document.getElementById('scan-btn');

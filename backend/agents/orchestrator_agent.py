@@ -138,7 +138,7 @@ class OrchestratorAgent:
                         score = max(0.45 if sms_urgent_flag else 0.1, email_result.email_score)
                     else:
                         verdict = "GREETING"
-                        explanation = "Hello there! I am CyberBoyAI, your dedicated cybersecurity assistant. I didn't detect any hidden links or threats in your message.\n\nI am engineered to hunt down phishing attempts, so feel free to paste any sketchy website URL, suspicious email, or bank SMS and I will break it down for you!"
+                        explanation = "Hello there! I am GaudOn, your dedicated cybersecurity assistant. I didn't detect any hidden links or threats in your message.\n\nI am engineered to hunt down phishing attempts, so feel free to paste any sketchy website URL, suspicious email, or bank SMS and I will break it down for you!"
                         advice = "I am ready when you are. Paste a threat to begin."
                         score = email_result.email_score
                     
@@ -346,7 +346,7 @@ class OrchestratorAgent:
                 verdict="SUSPICIOUS", # Safer to flag as suspicious during engine failure
                 score=0.5,
                 red_flags=[f"System Engine Error: {str(e)}"],
-                explanation="The CyberBoyAI engine encountered a technical error during analysis. This can happen with extremely obfuscated URLs or temporary network instability.",
+                explanation="The GaudOn engine encountered a technical error during analysis. This can happen with extremely obfuscated URLs or temporary network instability.",
                 advice="Standard caution advised. Re-scan the link in a few minutes.",
                 threat_type="phishing",
                 agents_used=["error_handler"],

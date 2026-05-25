@@ -46,7 +46,7 @@ async def check_safe_browsing(url: str) -> dict:
 
     payload = {
         "client": {
-            "clientId": "cyberboyai-threat-engine",
+            "clientId": "gaudon-threat-engine",
             "clientVersion": "2.0"
         },
         "threatInfo": {

@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────
-# CyberBoyAI – Backend API
+# GaudOn – Backend API
 # Build context: repository root  (docker build -f Dockerfile .)
 # The backend source lives in ./backend/
 # ─────────────────────────────────────────────────────────────

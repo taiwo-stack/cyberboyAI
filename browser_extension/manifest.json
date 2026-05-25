@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "CyberBoyAI Threat Protection",
+  "name": "GaudOn Threat Protection",
   "version": "1.0",
   "description": "Real-time, multi-agent AI phishing detection and domain analysis.",
   "permissions": [

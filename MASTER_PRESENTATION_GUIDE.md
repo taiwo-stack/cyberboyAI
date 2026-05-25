@@ -1,4 +1,4 @@
-# 🛡️ CyberBoyAI: Minimalist 10-Slide Presentation Blueprint
+# 🛡️ GaudOn: Minimalist 10-Slide Presentation Blueprint
 
 This presentation blueprint has been optimized to fit **exactly 10 slides** to meet **Gamma.app's 10-card limit**, while fully preserving **every single technical and mathematical concept** of the platform. 
 
@@ -7,11 +7,11 @@ It is 100% clean, noise-free, and ready to be imported directly into Gamma to ge
 ---
 
 ## Slide 1: Title & System Summary
-*   **Slide Title:** CyberBoyAI: Next-Gen Multi-Agent Threat Detection
+*   **Slide Title:** GaudOn: Next-Gen Multi-Agent Threat Detection
 *   **Subtitle:** A 9-Layer Shield Combining ML, OSINT, and Playwright Sandboxed AI Forensics
 *   **Status:** Production-Ready (Live Vercel Frontend, Dockerized FastAPI Backend on Render)
 *   **Key Achievement:** End-to-end real-time sentry with high-speed 10-minute caching for instant client-side history.
-*   **Speaker Script:** *"Welcome. Today I present CyberBoyAI, a production-grade 9-layer multi-agent threat sentry. Our platform is fully deployed, combining the speed of local databases, local machine learning, and sandboxed generative AI to secure digital workflows."*
+*   **Speaker Script:** *"Welcome. Today I present GaudOn, a production-grade 9-layer multi-agent threat sentry. Our platform is fully deployed, combining the speed of local databases, local machine learning, and sandboxed generative AI to secure digital workflows."*
 
 ---
 
@@ -20,8 +20,8 @@ It is 100% clean, noise-free, and ready to be imported directly into Gamma to ge
 *   **Points:**
     *   **Zero-Day Attacks:** Hackers buy and register cheap domains minutes before an attack.
     *   **Database Delays:** Global commercial blacklists take hours or days to sync.
-    *   **The CyberBoyAI Philosophy:** Assume the database is always outdated. Analyze the live site's physical DNA and behavioral characteristics in real time.
-*   **Speaker Script:** *"Traditional filters fail because attackers buy new domains and attack before blacklists sync. CyberBoyAI operates on a zero-trust model—we analyze physical DNA and dynamic page behaviors in real time rather than just relying on database records."*
+    *   **The GaudOn Philosophy:** Assume the database is always outdated. Analyze the live site's physical DNA and behavioral characteristics in real time.
+*   **Speaker Script:** *"Traditional filters fail because attackers buy new domains and attack before blacklists sync. GaudOn operates on a zero-trust model—we analyze physical DNA and dynamic page behaviors in real time rather than just relying on database records."*
 
 ---
 
@@ -53,7 +53,7 @@ It is 100% clean, noise-free, and ready to be imported directly into Gamma to ge
     *   **Vision OCR & Qishing:** GPT-4o-Vision scans screenshots and decodes visual QR codes.
     *   **Redirect Tracker:** Recursively follows HTTP redirect chains (up to 10 hops) to unmask hidden endpoints.
     *   **Email Preprocessing:** Parses raw `.eml` headers, decodes text/plain MIME payloads, and removes duplicates to secure high-fidelity text.
-*   **Speaker Script:** *"Scammers hide behind QR codes ('Qishing') and redirect shorteners like bit.ly. CyberBoyAI unmasks redirect hops recursively and uses computer vision to extract links from screenshots instantly."*
+*   **Speaker Script:** *"Scammers hide behind QR codes ('Qishing') and redirect shorteners like bit.ly. GaudOn unmasks redirect hops recursively and uses computer vision to extract links from screenshots instantly."*
 
 ---
 
@@ -96,7 +96,7 @@ It is 100% clean, noise-free, and ready to be imported directly into Gamma to ge
     *   **Path-Aware Whitelisting:** Strips whitelists for deep paths (e.g. `docs.google.com/forms`) to block forms hosted on trusted domains.
     *   **Offline Tolerance:** Playwright detects status codes ($0, 404, 403$) to safely bypass OpenAI calls and save API costs.
     *   **SMTP Protection:** Email agent parses raw headers and applies severe penalties if sender address and Reply-To domains mismatch.
-*   **Speaker Script:** *"Hackers abuse trusted platforms like Google Forms because standard security engines blindly whitelist Google. CyberBoyAI implements path-aware whitelisting, forcing a deep sandbox audit the moment a deep user form path is detected."*
+*   **Speaker Script:** *"Hackers abuse trusted platforms like Google Forms because standard security engines blindly whitelist Google. GaudOn implements path-aware whitelisting, forcing a deep sandbox audit the moment a deep user form path is detected."*
 
 ---
 
@@ -106,4 +106,4 @@ It is 100% clean, noise-free, and ready to be imported directly into Gamma to ge
     *   **Rotating Residential Proxies:** Bypasses attacker IP blocklists by routing scrapers through home residential internet connections.
     *   **Active Learning Loops:** Automates monthly ML model retraining using live community threat feedback reports.
     *   **CAPTCHA Solvers:** Integrates automated visual solvers to scan malicious pages hidden behind Cloudflare verification gates.
-*   **Speaker Script:** *"To scale CyberBoyAI to an enterprise level, we will integrate rotating residential proxies to defeat adversary blocking, implement monthly active learning loops to prevent model drift, and deploy CAPTCHA solvers to bypass security gates."*
+*   **Speaker Script:** *"To scale GaudOn to an enterprise level, we will integrate rotating residential proxies to defeat adversary blocking, implement monthly active learning loops to prevent model drift, and deploy CAPTCHA solvers to bypass security gates."*
