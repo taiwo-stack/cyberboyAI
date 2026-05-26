@@ -1,5 +1,5 @@
 // Set to 'http://localhost:8000' for local development
-const BACKEND_URL = 'https://gaudon.onrender.com';
+const BACKEND_URL = 'http://100.55.84.182';
 
 chrome.contextMenus.create({
   id: "analyze-link",
