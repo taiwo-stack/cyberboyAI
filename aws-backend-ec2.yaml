@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'GaudOn Backend EC2 Deployment'
+Description: 'GaudOn Backend EC2 Deployment with SSM and Elastic IP'
 
 Parameters:
   InstanceType:
@@ -8,12 +8,42 @@ Parameters:
     Description: EC2 instance type (t3.medium recommended for ML/Playwright)
   GitHubRepoUrl:
     Type: String
-    Default: 'https://github.com/taiwo-stack/GaudOn.git'
+    Default: 'https://github.com/taiwo-stack/cyberboyAI.git'
     Description: The GitHub repository to clone
   LatestAmiId:
     Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
     Default: '/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64'
     Description: Dynamically fetches the latest Amazon Linux 2023 AMI
+  
+  # Backend Environment Secrets
+  OpenAiApiKey:
+    Type: String
+    NoEcho: true
+  SupabaseUrl:
+    Type: String
+  SupabaseServiceKey:
+    Type: String
+    NoEcho: true
+  AbuseIpDbApiKey:
+    Type: String
+    NoEcho: true
+  OtxApiKey:
+    Type: String
+    NoEcho: true
+  GoogleSafeBrowsingApiKey:
+    Type: String
+    NoEcho: true
+  AdminSecretKey:
+    Type: String
+    NoEcho: true
+  HfToken:
+    Type: String
+    NoEcho: true
+  HfRepoId:
+    Type: String
+  ProxyEnabled:
+    Type: String
+    Default: 'false'
 
 Resources:
   BackendSecurityGroup:
@@ -38,6 +68,27 @@ Resources:
           ToPort: 8000
           CidrIp: 0.0.0.0/0
 
+  BackendSSMRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore'
+
+  BackendInstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Roles:
+        - !Ref BackendSSMRole
+
   BackendInstance:
     Type: 'AWS::EC2::Instance'
     Properties:
@@ -45,6 +96,7 @@ Resources:
       ImageId: !Ref LatestAmiId
       SecurityGroupIds:
         - !Ref BackendSecurityGroup
+      IamInstanceProfile: !Ref BackendInstanceProfile
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
@@ -58,13 +110,25 @@ Resources:
           usermod -a -G docker ec2-user
           
           # Install Docker Compose
-          curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-\$(uname -s)-\$(uname -m)" -o /usr/local/bin/docker-compose
           chmod +x /usr/local/bin/docker-compose
           
           # Clone repository
           cd /home/ec2-user
           git clone ${GitHubRepoUrl} app
           cd app/backend
+          
+          # Write environment variables securely from CloudFormation parameters
+          echo "OPENAI_API_KEY=${OpenAiApiKey}" > .env
+          echo "SUPABASE_URL=${SupabaseUrl}" >> .env
+          echo "SUPABASE_SERVICE_KEY=${SupabaseServiceKey}" >> .env
+          echo "ABUSEIPDB_API_KEY=${AbuseIpDbApiKey}" >> .env
+          echo "OTX_API_KEY=${OtxApiKey}" >> .env
+          echo "GOOGLE_SAFE_BROWSING_API_KEY=${GoogleSafeBrowsingApiKey}" >> .env
+          echo "ADMIN_SECRET_KEY=${AdminSecretKey}" >> .env
+          echo "PROXY_ENABLED=${ProxyEnabled}" >> .env
+          echo "HF_TOKEN=${HfToken}" >> .env
+          echo "HF_REPO_ID=${HfRepoId}" >> .env
           
           # Build and run the backend Docker container
           # Note: We run it on port 80 to make it publicly accessible without specifying the port in the browser
@@ -74,10 +138,21 @@ Resources:
           # Ensure container restarts on reboot
           docker update --restart unless-stopped backend
 
+  BackendEip:
+    Type: 'AWS::EC2::EIP'
+    Properties:
+      Domain: vpc
+
+  BackendEipAssociation:
+    Type: 'AWS::EC2::EIPAssociation'
+    Properties:
+      InstanceId: !Ref BackendInstance
+      AllocationId: !GetAtt BackendEip.AllocationId
+
 Outputs:
   PublicIp:
-    Description: 'Public IP of the Backend Instance'
-    Value: !GetAtt BackendInstance.PublicIp
+    Description: 'Permanent Public IP of the Backend Instance (Elastic IP)'
+    Value: !Ref BackendEip
   BackendUrl:
-    Description: 'API Base URL for the Backend'
-    Value: !Sub 'http://${BackendInstance.PublicIp}'
+    Description: 'API Base URL for the Backend (Elastic IP)'
+    Value: !Sub 'http://${BackendEip}'
