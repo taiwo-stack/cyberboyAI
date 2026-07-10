@@ -31,8 +31,8 @@ export type StatsResponse = {
   community_threats_count: number;
 };
 
-// Use localhost:8000 by default if environment variable is missing
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// Use /api by default to route through the Next.js proxy
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 export async function analyzeInput(input: string, imageBase64?: string): Promise<VerdictResponse> {
   const payload: any = { input, source: "web" };
