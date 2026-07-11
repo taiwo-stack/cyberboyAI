@@ -138,7 +138,7 @@ class OrchestratorAgent:
                         score = max(0.45 if sms_urgent_flag else 0.1, email_result.email_score)
                     else:
                         verdict = "GREETING"
-                        explanation = "Hello there! I am GaudOn, your dedicated cybersecurity assistant. I didn't detect any hidden links or threats in your message.\n\nI am engineered to hunt down phishing attempts, so feel free to paste any sketchy website URL, suspicious email, or bank SMS and I will break it down for you!"
+                        explanation = "System online. I am GaudOn, your dedicated multi-agent cybersecurity sentry. Drop a suspicious screenshot, paste a deceptive email or raw headers, or paste a malicious URL below. I will instantly analyze the threat using my multi-layer Defense-in-Depth pipeline, checking everything from linguistic intent and structural machine learning down to sandboxed DOM elements and behavioral indicators."
                         advice = "I am ready when you are. Paste a threat to begin."
                         score = email_result.email_score
                     
