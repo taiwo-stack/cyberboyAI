@@ -220,28 +220,54 @@ document.addEventListener('DOMContentLoaded', function() {
       redFlagsContainer.classList.add('hidden');
     }
 
-    // Technical Deep-Dive — SSL cert
-    const behavior = data.behavior_result;
-    document.getElementById('ssl-issuer').textContent   = behavior?.ssl_issuer || 'None/Insecure';
-    const certValidity = behavior?.dynamic_findings?.days_to_expire;
-    document.getElementById('ssl-validity').textContent = typeof certValidity === 'number' ? certValidity + ' days remaining' : 'N/A';
-    const certAge = behavior?.dynamic_findings?.cert_age_days;
-    document.getElementById('ssl-age').textContent      = typeof certAge === 'number' ? certAge + ' days old' : 'N/A';
-
-    // Redirect chain — show 'No redirects' rather than dumping the input text
-    const redirectList = document.getElementById('redirect-list');
-    redirectList.innerHTML = '';
-    const chain = behavior?.redirect_chain || [];
-    if (chain.length > 0) {
-      chain.forEach(hop => {
-        const li = document.createElement('li');
-        li.textContent = hop;
-        redirectList.appendChild(li);
-      });
+    // Technical Deep-Dive — Email content section
+    const emailRes = data.email_result;
+    const emailSec = document.getElementById('email-section');
+    const emailRow = document.getElementById('agent-row-email');
+    
+    if (emailRes) {
+      emailSec.classList.remove('hidden');
+      emailRow.classList.remove('hidden');
+      document.getElementById('email-threat').textContent = emailRes.threat_type.toUpperCase();
+      document.getElementById('email-finding').textContent = emailRes.finding || "No specific patterns flagged.";
     } else {
-      const li = document.createElement('li');
-      li.textContent = 'No redirects detected. Direct connection.';
-      redirectList.appendChild(li);
+      emailSec.classList.add('hidden');
+      emailRow.classList.add('hidden');
+    }
+
+    // Technical Deep-Dive — SSL cert and Redirect Sections
+    const behavior = data.behavior_result;
+    const sslSec = document.getElementById('ssl-section');
+    const redirectSec = document.getElementById('redirect-section');
+
+    if (behavior && (behavior.ssl_issuer !== 'None/Insecure' || (behavior.redirect_chain && behavior.redirect_chain.length > 0))) {
+      sslSec.classList.remove('hidden');
+      redirectSec.classList.remove('hidden');
+      
+      document.getElementById('ssl-issuer').textContent   = behavior.ssl_issuer || 'None/Insecure';
+      const certValidity = behavior.dynamic_findings?.days_to_expire;
+      document.getElementById('ssl-validity').textContent = typeof certValidity === 'number' ? certValidity + ' days remaining' : 'N/A';
+      const certAge = behavior.dynamic_findings?.cert_age_days;
+      document.getElementById('ssl-age').textContent      = typeof certAge === 'number' ? certAge + ' days old' : 'N/A';
+
+      // Redirect chain
+      const redirectList = document.getElementById('redirect-list');
+      redirectList.innerHTML = '';
+      const chain = behavior.redirect_chain || [];
+      if (chain.length > 0) {
+        chain.forEach(hop => {
+          const li = document.createElement('li');
+          li.textContent = hop;
+          redirectList.appendChild(li);
+        });
+      } else {
+        const li = document.createElement('li');
+        li.textContent = 'No redirects detected. Direct connection.';
+        redirectList.appendChild(li);
+      }
+    } else {
+      sslSec.classList.add('hidden');
+      redirectSec.classList.add('hidden');
     }
 
     // Agent score bars
@@ -258,6 +284,7 @@ document.addEventListener('DOMContentLoaded', function() {
       else                    bar.classList.add('safe');
     }
 
+    updateAgentBar('email',    data.email_result?.email_score);
     updateAgentBar('brand',    data.brand_result?.similarity_score);
     updateAgentBar('lookup',   data.lookup_result?.db_score);
     updateAgentBar('ml',       data.ml_result?.ml_score);

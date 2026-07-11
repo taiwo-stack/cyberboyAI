@@ -45,20 +45,39 @@
         <button id="toggle-details" class="accordion-trigger">Technical Deep-Dive & Evidence</button>
         <div id="details-panel" class="accordion-content hidden">
           
-          <div class="section-title">🔒 SSL Certificate</div>
-          <div class="technical-box">
-            <div class="stat-row"><span>Issuer:</span> <span id="ssl-issuer" class="val-mono"></span></div>
-            <div class="stat-row"><span>Validity:</span> <span id="ssl-validity" class="val-mono"></span></div>
-            <div class="stat-row"><span>Cert Age:</span> <span id="ssl-age" class="val-mono"></span></div>
+          <div id="email-section" class="hidden">
+            <div class="section-title">📧 Email / Text Content Diagnostics</div>
+            <div class="technical-box">
+              <div class="stat-row"><span>Classifier Verdict:</span> <span id="email-threat" class="val-mono"></span></div>
+              <div class="stat-row"><span style="min-width: 110px;">Linguistic Analysis:</span> <span id="email-finding" class="val-mono" style="word-break: break-word; text-align: right;"></span></div>
+            </div>
+          </div>
+
+          <div id="ssl-section">
+            <div class="section-title">🔒 SSL Certificate</div>
+            <div class="technical-box">
+              <div class="stat-row"><span>Issuer:</span> <span id="ssl-issuer" class="val-mono"></span></div>
+              <div class="stat-row"><span>Validity:</span> <span id="ssl-validity" class="val-mono"></span></div>
+              <div class="stat-row"><span>Cert Age:</span> <span id="ssl-age" class="val-mono"></span></div>
+            </div>
           </div>
           
-          <div class="section-title">🔗 Redirect Chain</div>
-          <div class="technical-box redirect-box">
-            <ol id="redirect-list"></ol>
+          <div id="redirect-section">
+            <div class="section-title">🔗 Redirect Chain</div>
+            <div class="technical-box redirect-box">
+              <ol id="redirect-list"></ol>
+            </div>
           </div>
           
           <div class="section-title">🤖 AI Agent Trace</div>
           <div class="technical-box">
+            <div id="agent-row-email" class="agent-row hidden">
+              <span>Linguistic Analysis:</span>
+              <div class="agent-score">
+                <div class="score-bar-bg"><div id="score-bar-email" class="score-bar"></div></div>
+                <span id="score-val-email"></span>
+              </div>
+            </div>
             <div class="agent-row">
               <span>Brand Check:</span>
               <div class="agent-score">
