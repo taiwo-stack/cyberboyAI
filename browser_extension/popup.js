@@ -19,48 +19,91 @@ document.addEventListener('DOMContentLoaded', function() {
       let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (!tab || !tab.url) throw new Error("Could not read tab URL.");
 
-      // Check if the user is on a known webmail client
-      const isWebmail = tab.url.includes("mail.google.com") || 
-                        tab.url.includes("outlook.live.com") || 
-                        tab.url.includes("outlook.office.com") ||
-                        tab.url.includes("mail.yahoo.com");
-
       let payload = tab.url; // Default to scanning the website URL itself
       
-      // Only perform Deep DOM extraction if we are inside a webmail inbox
-      if (isWebmail) {
-        let pageText = "";
-        try {
-          const injectionResults = await chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            func: () => {
-              const text = document.body.innerText;
-              // Extract all links on the page, filtering out the email provider's own navigation links
-              const links = Array.from(document.querySelectorAll('a'))
-                .map(a => a.href)
-                .filter(href => href.startsWith('http') && 
-                               !href.includes('google.com') && 
-                               !href.includes('yahoo.com') && 
-                               !href.includes('live.com') &&
-                               !href.includes('office.com'));
-              const uniqueLinks = [...new Set(links)];
-              return { text: text, links: uniqueLinks };
+      // Try to inject DOM content extractor
+      let extractedContent = null;
+      try {
+        const injectionResults = await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: () => {
+            // 1. Check if user highlighted any text on the page
+            const selection = window.getSelection().toString().trim();
+            if (selection.length > 10) {
+              let selectionLinks = [];
+              try {
+                const range = window.getSelection().getRangeAt(0);
+                const container = document.createElement("div");
+                container.appendChild(range.cloneContents());
+                const links = Array.from(container.querySelectorAll('a'))
+                  .map(a => a.href)
+                  .filter(href => href.startsWith('http') && 
+                                 !href.includes('google.com') && 
+                                 !href.includes('yahoo.com') && 
+                                 !href.includes('live.com') &&
+                                 !href.includes('office.com'));
+                selectionLinks = [...new Set(links)];
+              } catch (err) {}
+              return { text: selection, links: selectionLinks, type: "selection" };
             }
-          });
-          
-          if (injectionResults && injectionResults[0] && injectionResults[0].result) {
-            const res = injectionResults[0].result;
-            pageText = res.text.substring(0, 5000); 
-            if (res.links.length > 0) {
-               pageText += "\n\n[Embedded Links Found:]\n" + res.links.join("\n");
-            }
-          }
-        } catch (e) {
-          console.warn("Could not extract page text:", e);
-        }
 
-        if (pageText.length > 50) {
-          payload = pageText; // Send the extracted email body
+            // 2. Check if we are on a webmail client and try to extract target email container
+            const host = window.location.hostname;
+            let emailText = "";
+            let emailLinks = [];
+            
+            if (host.includes("mail.google.com")) {
+              const emailElements = document.querySelectorAll('.a3s, .ii.gt, div[role="listitem"] div.a3s');
+              emailElements.forEach(el => {
+                emailText += el.innerText + "\n";
+                const links = Array.from(el.querySelectorAll('a'))
+                  .map(a => a.href)
+                  .filter(h => h.startsWith('http') && !h.includes('google.com'));
+                emailLinks.push(...links);
+              });
+            } else if (host.includes("outlook.live.com") || host.includes("outlook.office.com")) {
+              const emailElements = document.querySelectorAll('div[role="document"], div[aria-label="Email message body"], .ReadingPane');
+              emailElements.forEach(el => {
+                emailText += el.innerText + "\n";
+                const links = Array.from(el.querySelectorAll('a'))
+                  .map(a => a.href)
+                  .filter(h => h.startsWith('http') && !h.includes('live.com') && !h.includes('office.com'));
+                emailLinks.push(...links);
+              });
+            } else if (host.includes("mail.yahoo.com")) {
+              const emailElements = document.querySelectorAll('div[data-test-id="message-view-body"], .thread-body');
+              emailElements.forEach(el => {
+                emailText += el.innerText + "\n";
+                const links = Array.from(el.querySelectorAll('a'))
+                  .map(a => a.href)
+                  .filter(h => h.startsWith('http') && !h.includes('yahoo.com'));
+                emailLinks.push(...links);
+              });
+            }
+
+            if (emailText.trim().length > 20) {
+              return { text: emailText.trim(), links: [...new Set(emailLinks)], type: "webmail" };
+            }
+
+            return null;
+          }
+        });
+
+        if (injectionResults && injectionResults[0] && injectionResults[0].result) {
+          extractedContent = injectionResults[0].result;
+        }
+      } catch (e) {
+        console.warn("Could not inject scraper:", e);
+      }
+
+      if (extractedContent) {
+        let finalPayload = extractedContent.text;
+        if (extractedContent.links.length > 0) {
+          finalPayload += "\n\n[Embedded Links Found:]\n" + extractedContent.links.join("\n");
+        }
+        
+        if (finalPayload.length > 30) {
+          payload = finalPayload;
         }
       }
 
