@@ -233,9 +233,36 @@ ML Score: {ml_score}
             
             data = json.loads(response.choices[0].message.content)
             brand_info = data.get("identified_brand")
-            off_domain = data.get("official_domain")
-            
-            finding = f"AI Analysis complete. {f'Identified impersonation of {brand_info}.' if brand_info else 'No clear brand impersonation found.'}"
+            off_domain = data.get("official_domain") or ""
+
+            # ── Impersonation guard ──────────────────────────────────────────────
+            # GPT returns the brand it sees.  We only say "impersonation" if
+            # the *official* domain label (e.g. "paypal") differs from the
+            # *submitted* domain label (e.g. "paypal-login").  If GPT recognised
+            # the site's own legitimate brand, that is confirmation, not attack.
+            import tldextract as _tlde
+            submitted_label = _tlde.extract(url).domain.lower()
+            official_label  = _tlde.extract(off_domain).domain.lower() if off_domain else ""
+
+            is_impersonating = bool(
+                brand_info and official_label and
+                official_label != submitted_label
+            )
+
+            if is_impersonating:
+                finding = (
+                    f"AI Analysis complete. "
+                    f"Identified impersonation of {brand_info} "
+                    f"(official domain: {off_domain})."
+                )
+            elif brand_info:
+                finding = (
+                    f"AI Analysis complete. "
+                    f"Brand confirmed as '{brand_info}'. "
+                    f"No impersonation of an external entity detected."
+                )
+            else:
+                finding = "AI Analysis complete. No clear brand impersonation found."
 
             return OpenAIAgentResult(
                 openai_score=float(data.get("openai_score", ml_score)),

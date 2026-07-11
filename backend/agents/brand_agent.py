@@ -152,16 +152,28 @@ class BrandAgent:
 
             # Generic fallback heuristics for brands not in the list
             if highest_similarity < 0.75:
-                # Define a small set of high‑risk generic keywords often used in phishing domains
+                # High-risk generic keywords frequently used in phishing domain constructions
                 _GENERIC_KEYWORDS = {"customs", "login", "secure", "verify", "bank", "delivery", "shipment", "parcel", "payment", "refund"}
                 # Tokenize the submitted label on hyphens and dots
                 tokens = set(submitted_label.replace(".", "-").split("-"))
                 intersect = _GENERIC_KEYWORDS.intersection(tokens)
                 if intersect:
-                    # Use the first matched generic keyword as a pseudo‑brand for advisory purposes
-                    closest_brand_label = list(intersect)[0]
-                    highest_similarity = 0.5  # Assign a moderate similarity to trigger advice
-                # If no generic keyword matches, keep highest_similarity as‑is (likely 0) and closest_brand_label as None
+                    matched_kw = list(intersect)[0]
+                    # Mathematically derive the similarity as the proportion of the domain
+                    # label that IS the keyword — a domain that IS the keyword (e.g. login.com)
+                    # scores 1.0; one that contains it as a small suffix scores proportionally less.
+                    kw_coverage = len(matched_kw) / max(len(submitted_label), 1)
+                    # Penalise by (1 - levenshtein_distance/max_len) so the signal reflects
+                    # how precisely the keyword matches the full label, not just presence.
+                    kw_lev_sim = 1.0 - (Levenshtein.distance(submitted_label, matched_kw) /
+                                        max(len(submitted_label), len(matched_kw)))
+                    # Final score is the geometric mean of coverage and edit-distance similarity
+                    # Capped at 0.72 — below the 0.75 impersonation threshold by design since
+                    # a generic keyword alone is advisory evidence, not definitive impersonation.
+                    generic_sim = min((kw_coverage * kw_lev_sim) ** 0.5, 0.72)
+                    if generic_sim > highest_similarity:
+                        highest_similarity = generic_sim
+                        closest_brand_label = matched_kw
 
             # Threshold 0.75 — tighter than before since our dataset is 10x larger
             is_impersonation = (highest_similarity >= 0.75)
@@ -174,11 +186,16 @@ class BrandAgent:
                     f"'{closest_brand_label}' (a globally recognized brand)."
                 )
 
-            finding = f"Cross-referenced against global brand intelligence database. No fraudulent matches detected."
+            # Finding thresholds derived from the scoring model:
+            # >= 0.75  → confirmed impersonation (separate fast-path above)
+            # >= 0.40  → non-trivial similarity warrants an explicit advisory
+            # <  0.40  → noise-level; genuinely no match
             if is_impersonation:
                 finding = f"CRITICAL: Visual signature match detected for '{closest_brand_label}'. Integrity Score: {highest_similarity*100:.1f}%."
-            elif highest_similarity > 0.5:
+            elif highest_similarity >= 0.40 and closest_brand_label:
                 finding = f"Anomalous similarity ({highest_similarity*100:.1f}%) to verified brand '{closest_brand_label}' detected."
+            else:
+                finding = f"Cross-referenced against global brand intelligence database. No fraudulent matches detected."
 
             return BrandAgentResult(
                 is_impersonation=is_impersonation,
