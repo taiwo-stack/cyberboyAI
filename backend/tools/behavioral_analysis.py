@@ -37,9 +37,13 @@ class BehavioralAnalyzer:
                         
                         # Extract dates and ensure they are UTC for safe subtraction
                         # Standard peercert format: 'May 13 19:56:32 2026 GMT'
+                        # Clean double spaces to handle single-digit days gracefully on all platforms
+                        not_after_str = cert['notAfter'].replace("  ", " ")
+                        not_before_str = cert['notBefore'].replace("  ", " ")
+                        
                         fmt = "%b %d %H:%M:%S %Y %Z"
-                        not_after = datetime.strptime(cert['notAfter'], fmt)
-                        not_before = datetime.strptime(cert['notBefore'], fmt)
+                        not_after = datetime.strptime(not_after_str, fmt)
+                        not_before = datetime.strptime(not_before_str, fmt)
                         
                         # Use UTC for now to avoid offset-naive vs offset-aware errors
                         now = datetime.utcnow()

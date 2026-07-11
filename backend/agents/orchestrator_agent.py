@@ -244,22 +244,13 @@ class OrchestratorAgent:
                 return res
 
             if _skip_brand:
-                if _skip_tier2:
-                    lookup_r, ml_r = await asyncio.gather(
-                        _time(self.lookup.check(target_url)),
-                        _time(self.ml.check(target_url))
-                    )
-                    behavior_r = BehavioralAgentResult(
-                        behavior_score=0.0, red_flags=[], redirect_chain=[],
-                        ssl_issuer="Verified", dynamic_findings={}, finding="Behavioral scan skipped for trusted domain.",
-                        raw_html="", raw_text="", execution_ms=0
-                    )
-                else:
-                    lookup_r, ml_r, behavior_r = await asyncio.gather(
-                        _time(self.lookup.check(target_url)),
-                        _time(self.ml.check(target_url)),
-                        _time(self.behavioral.analyze(target_url, is_trusted=_is_trusted))
-                    )
+                # Always run behavioral analysis to capture SSL and redirects, 
+                # but pass is_trusted so behavioral agent skips the heavy Playwright scan
+                lookup_r, ml_r, behavior_r = await asyncio.gather(
+                    _time(self.lookup.check(target_url)),
+                    _time(self.ml.check(target_url)),
+                    _time(self.behavioral.analyze(target_url, is_trusted=_is_trusted))
+                )
                 
                 brand_r = BrandAgentResult(
                     is_impersonation=False, similarity_score=0.0,

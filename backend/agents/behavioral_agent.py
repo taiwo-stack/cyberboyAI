@@ -48,8 +48,19 @@ class BehavioralAgent:
             # 2. Trace Redirects (only if online)
             redirect_chain = await behavioral_analyzer.trace_redirects(url)
             
-            # 3. Dynamic Analysis (only if online)
-            dynamic_info = await behavioral_analyzer.analyze_dynamic_behavior(url)
+            # 3. Dynamic Analysis (only if online and not trusted)
+            if is_trusted:
+                dynamic_info = {
+                    "cloaking_detected": False,
+                    "dynamic_content_detected": False,
+                    "has_password_field": False,
+                    "scripts_count": 0,
+                    "evidence": ["Playwright dynamic scan skipped for trusted domain."],
+                    "html": "",
+                    "text": ""
+                }
+            else:
+                dynamic_info = await behavioral_analyzer.analyze_dynamic_behavior(url)
 
         # Merge SSL age details into dynamic_info so the frontend DeepEvidence component can render them
         dynamic_info["days_to_expire"] = ssl_info.get("days_to_expire", 0)

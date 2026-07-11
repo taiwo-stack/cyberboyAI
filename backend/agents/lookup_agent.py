@@ -136,8 +136,15 @@ class LookupAgent:
                 bool(community_hit),
             ])
 
+            # Extract registered domain to check trusted whitelist
+            ext = tldextract.extract(url)
+            domain = f"{ext.domain}.{ext.suffix}".lower() if ext.suffix else ext.domain.lower()
+            from tools.trusted_domains import trusted_domain_manager
+            is_trusted = trusted_domain_manager.is_trusted(domain)
+
             otx_solo   = otx_hit and confirmed_sources == 0
             otx_weight = (
+                0.0 if is_trusted and otx_solo else             # Suppress trusted solo OTX false positives
                 0.05 if otx_solo and otx_pulse_count < 5 else   # Stale/low-confidence OTX
                 0.15 if otx_solo else                            # OTX only, but notable pulse count
                 0.30                                             # OTX + corroborating evidence
@@ -153,10 +160,12 @@ class LookupAgent:
 
             if otx_hit:
                 db_score += otx_weight
-                sources_flagged.append(
-                    f"AlienVault OTX ({otx_pulse_count} pulses)"
-                    + (" [solo signal — low confidence]" if otx_solo else "")
-                )
+                # Only list OTX in sources_flagged if weight > 0 (to suppress trusted domain false positive logs)
+                if otx_weight > 0.0:
+                    sources_flagged.append(
+                        f"AlienVault OTX ({otx_pulse_count} pulses)"
+                        + (" [solo signal — low confidence]" if otx_solo else "")
+                    )
 
             if community_hit:
                 db_score += 0.40
