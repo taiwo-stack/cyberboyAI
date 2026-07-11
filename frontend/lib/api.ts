@@ -31,8 +31,10 @@ export type StatsResponse = {
   community_threats_count: number;
 };
 
-// Use /api by default to route through the Next.js proxy
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
+// NEXT_PUBLIC_API_URL must be set in Amplify Environment Variables.
+// Falls back to the EC2 backend URL directly for static deployments
+// where Next.js rewrites() are unavailable.
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://98.94.189.162";
 
 export async function analyzeInput(input: string, imageBase64?: string): Promise<VerdictResponse> {
   const payload: any = { input, source: "web" };
