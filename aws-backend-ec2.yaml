@@ -89,7 +89,7 @@ Resources:
       Roles:
         - !Ref BackendSSMRole
 
-  BackendInstance:
+  GaudOnInstance:
     Type: 'AWS::EC2::Instance'
     Properties:
       InstanceType: !Ref InstanceType
@@ -100,7 +100,7 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
-          # Update OS and install Docker and Git
+          # Trigger Rebuild ID: 2
           dnf update -y
           dnf install -y docker git
           systemctl start docker
@@ -146,7 +146,7 @@ Resources:
   BackendEipAssociation:
     Type: 'AWS::EC2::EIPAssociation'
     Properties:
-      InstanceId: !Ref BackendInstance
+      InstanceId: !Ref GaudOnInstance
       AllocationId: !GetAtt BackendEip.AllocationId
 
 Outputs:
