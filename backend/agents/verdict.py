@@ -165,7 +165,7 @@ async def compute_verdict(
         red_flags.append("Found in OpenPhish/URLhaus threat database")
     if lookup.abuseipdb_score > 50:
         red_flags.append("Reported as malicious IP (AbuseIPDB)")
-    if lookup.otx_hit:
+    if lookup.otx_hit and any("AlienVault OTX" in src for src in lookup.sources_flagged):
         red_flags.append("Flagged by AlienVault OTX threat intelligence")
     if lookup.community_hit:
         red_flags.append("Matches community-reported global threat")
