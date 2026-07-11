@@ -35,7 +35,7 @@ export default function Home() {
       {
         id: "msg-welcome",
         role: "ai",
-        content: "System online. I am **GaudOn**, your dedicated multi-agent cybersecurity sentry.\n\nDrop a suspicious screenshot, forward a deceptive email, or paste a malicious URL below. I will instantly tear the threat apart using my 9-Layer Defense-in-Depth pipeline—analyzing everything from linguistic intent and structural machine learning down to the live execution code.",
+        content: "System online. I am **GaudOn**, your dedicated multi-agent cybersecurity sentry. Drop a suspicious screenshot, paste a deceptive email or raw headers, or paste a malicious URL below. I will instantly analyze the threat using my multi-layer Defense-in-Depth pipeline, checking everything from linguistic intent and structural machine learning down to sandboxed DOM elements and behavioral indicators.",
       }
     ]);
 
