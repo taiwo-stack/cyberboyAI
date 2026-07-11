@@ -122,8 +122,27 @@ async def compute_verdict(
                         "finding": behavior.finding.replace(" | CLOAKING DETECTED", "")
                     })
 
+        # ── OSINT-Clean Override ──────────────────────────────────────────────
+        # When ALL reputation databases return zero threat signals AND OpenAI
+        # independently (without seeing the ML score) rates the page as safe,
+        # the high ML structural score is almost certainly a false positive based
+        # on domain/SSL age alone.  Cap the final score at 0.45 (SUSPICIOUS max)
+        # so a clean-reputation, AI-confirmed legitimate site is never labelled DANGEROUS.
+        osint_fully_clean = (
+            not lookup.matched and
+            lookup.abuseipdb_score == 0 and
+            not lookup.otx_hit and
+            not lookup.phishtank_hit and
+            not lookup.community_hit and
+            lookup.db_score == 0.0
+        )
+        openai_says_safe = openai and openai.openai_score < 0.30 and not openai.red_flags
+
+        if osint_fully_clean and openai_says_safe and not brand.is_impersonation:
+            # Hard cap: clean reputation + AI-confirmed legit → cannot be DANGEROUS
+            final = min(final, 0.42)
+
         score = round(final, 4)
-        
         # VERDICT THRESHOLDS
         if score >= 0.75:
             verdict = "DANGEROUS"

@@ -188,29 +188,36 @@ class OpenAIAgent:
 Site Status: {status}
 Title: {page_data['title']}
 Meta: {page_data['meta_desc']}
-Forms: {page_data['forms']}
-Brand Match: {brand_ctx}
-ML Phishing Risk Score (0.0=safe, 1.0=dangerous): {ml_score}
+Forms (password inputs): {page_data['forms']}
+Domain Brand Match Hint: {brand_ctx}
 
 {boundary}_START
 {sanitized_text}
 {boundary}_END
 """
+        # NOTE: ml_score is intentionally excluded from the prompt so GPT derives its own
+        # independent judgment from page content and URL structure alone. This prevents
+        # the AI from anchoring on or echoing the ML score.
 
         # 3. Call AI
         system_prompt = (
             "You are a global cybersecurity forensic analyst. Analyze the page content and URL for phishing.\n\n"
+            "SCORING RULE (CRITICAL):\n"
+            "You MUST derive 'openai_score' entirely from the page content and URL structure you are given.\n"
+            "DO NOT echo or anchor on any externally provided score. Evaluate independently:\n"
+            "  - If the page content clearly describes a legitimate service and no impersonation is evident → score 0.0–0.15\n"
+            "  - If there are suspicious forms, deceptive brand mimicry, or social engineering content → score 0.7–1.0\n"
+            "  - If ambiguous → score 0.3–0.5\n\n"
             "ZERO-DAY BRAND DETECTION RULE:\n"
             "1. If the host is UNREACHABLE (Status 0 / DNS Resolution Failure), YOU MUST NOT identify a brand unless the domain is a near-identical character match for a major global entity.\n"
             "2. DO NOT use similarity or 'feel' to identify brands for unreachable sites. If in doubt, set identified_brand to null.\n"
             "3. For reachable sites, extract the 'identified_brand' only if it is explicitly stated in the page content or logos.\n"
             "4. NEVER guess generic brands like 'walmart' or 'amazon' from ambiguous strings if the site is unreachable.\n\n"
             "EXPLANATION GUIDELINE:\n"
-            "The 'explanation' field must be a comprehensive, descriptive summary of ALL your findings. Do not limit it to just brand comparison. "
-            "You must integrate the ML Phishing Risk Score (note: close to 1.0 means highly suspicious, close to 0.0 means safe), any URL structural anomalies, and page content evaluation into a cohesive forensic summary.\n\n"
+            "The 'explanation' field must be a comprehensive, descriptive summary of ALL your findings — URL structural anomalies, page content, brand signals, and form presence.\n\n"
             "Respond ONLY with valid JSON:\n"
             "{\n"
-            "  \"openai_score\": float (0.0-1.0),\n"
+            "  \"openai_score\": float (0.0-1.0, YOUR OWN independent assessment),\n"
             "  \"threat_type\": string ('benign', 'phishing', 'malware', 'defacement'),\n"
             "  \"identified_brand\": string or null,\n"
             "  \"official_domain\": string or null,\n"
@@ -265,8 +272,16 @@ ML Phishing Risk Score (0.0=safe, 1.0=dangerous): {ml_score}
             else:
                 finding = "AI Analysis complete. No clear brand impersonation found."
 
+            # Use GPT's own score. If GPT omits or returns 0 (which can mean "not sure"),
+            # fall back to 0.1 (neutral) — NOT ml_score, to preserve independence.
+            raw_score = data.get("openai_score")
+            if raw_score is None:
+                gpt_score = 0.1
+            else:
+                gpt_score = float(raw_score)
+
             return OpenAIAgentResult(
-                openai_score=float(data.get("openai_score", ml_score)),
+                openai_score=gpt_score,
                 confidence=int(data.get("confidence", 0)),
                 red_flags=data.get("red_flags", []),
                 explanation=data.get("explanation", "No explanation."),

@@ -188,11 +188,11 @@ class BrandAgent:
 
             # Finding thresholds derived from the scoring model:
             # >= 0.75  → confirmed impersonation (separate fast-path above)
-            # >= 0.40  → non-trivial similarity warrants an explicit advisory
-            # <  0.40  → noise-level; genuinely no match
+            # >= 0.55  → meaningful similarity that warrants an advisory note
+            # <  0.55  → statistical noise; genuinely no match worth reporting
             if is_impersonation:
                 finding = f"CRITICAL: Visual signature match detected for '{closest_brand_label}'. Integrity Score: {highest_similarity*100:.1f}%."
-            elif highest_similarity >= 0.40 and closest_brand_label:
+            elif highest_similarity >= 0.55 and closest_brand_label:
                 finding = f"Anomalous similarity ({highest_similarity*100:.1f}%) to verified brand '{closest_brand_label}' detected."
             else:
                 finding = f"Cross-referenced against global brand intelligence database. No fraudulent matches detected."
