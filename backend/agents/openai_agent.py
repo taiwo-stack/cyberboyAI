@@ -190,7 +190,7 @@ Title: {page_data['title']}
 Meta: {page_data['meta_desc']}
 Forms: {page_data['forms']}
 Brand Match: {brand_ctx}
-ML Score: {ml_score}
+ML Phishing Risk Score (0.0=safe, 1.0=dangerous): {ml_score}
 
 {boundary}_START
 {sanitized_text}
@@ -206,7 +206,8 @@ ML Score: {ml_score}
             "3. For reachable sites, extract the 'identified_brand' only if it is explicitly stated in the page content or logos.\n"
             "4. NEVER guess generic brands like 'walmart' or 'amazon' from ambiguous strings if the site is unreachable.\n\n"
             "EXPLANATION GUIDELINE:\n"
-            "The 'explanation' field must be a comprehensive, descriptive summary of ALL your findings. Do not limit it to just brand comparison. You must integrate the ML score, URL structural anomalies (from the context), and page content evaluation into a cohesive forensic summary.\n\n"
+            "The 'explanation' field must be a comprehensive, descriptive summary of ALL your findings. Do not limit it to just brand comparison. "
+            "You must integrate the ML Phishing Risk Score (note: close to 1.0 means highly suspicious, close to 0.0 means safe), any URL structural anomalies, and page content evaluation into a cohesive forensic summary.\n\n"
             "Respond ONLY with valid JSON:\n"
             "{\n"
             "  \"openai_score\": float (0.0-1.0),\n"
