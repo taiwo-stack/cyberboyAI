@@ -38,9 +38,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
       // Try to inject DOM content extractor (selection or webmail body)
       let extractedContent = null;
-      try {
-        const injectionResults = await chrome.scripting.executeScript({
-          target: { tabId: tab.id },
+      const isRestricted = !tab.url || 
+                           tab.url.startsWith("chrome://") || 
+                           tab.url.startsWith("chrome-extension://") || 
+                           tab.url.startsWith("about:") || 
+                           tab.url.includes("chrome.google.com/webstore");
+
+      if (!isRestricted) {
+        try {
+          const injectionResults = await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
           func: () => {
             // 1. Highlighted text — highest priority
             const selection = window.getSelection().toString().trim();
@@ -110,6 +117,7 @@ document.addEventListener('DOMContentLoaded', function() {
       } catch (e) {
         console.warn("Could not inject scraper:", e);
       }
+    }
 
       if (extractedContent) {
         let finalPayload = extractedContent.text;

@@ -1,10 +1,14 @@
 // Set to 'http://localhost:8000' for local development
 const BACKEND_URL = 'http://98.94.189.162';
 
-chrome.contextMenus.create({
-  id: "analyze-with-gaudon",
-  title: "Analyze with GaudOn",
-  contexts: ["link", "selection"]
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.contextMenus.removeAll(() => {
+    chrome.contextMenus.create({
+      id: "analyze-with-gaudon",
+      title: "Analyze with GaudOn",
+      contexts: ["link", "selection"]
+    });
+  });
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
