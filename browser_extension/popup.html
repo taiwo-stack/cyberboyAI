@@ -40,10 +40,61 @@
       <div class="advice">
         <strong>Advice:</strong> <span id="advice"></span>
       </div>
+
+      <div class="accordion">
+        <button id="toggle-details" class="accordion-trigger">Technical Deep-Dive & Evidence</button>
+        <div id="details-panel" class="accordion-content hidden">
+          
+          <div class="section-title">🔒 SSL Certificate</div>
+          <div class="technical-box">
+            <div class="stat-row"><span>Issuer:</span> <span id="ssl-issuer" class="val-mono"></span></div>
+            <div class="stat-row"><span>Validity:</span> <span id="ssl-validity" class="val-mono"></span></div>
+            <div class="stat-row"><span>Cert Age:</span> <span id="ssl-age" class="val-mono"></span></div>
+          </div>
+          
+          <div class="section-title">🔗 Redirect Chain</div>
+          <div class="technical-box redirect-box">
+            <ol id="redirect-list"></ol>
+          </div>
+          
+          <div class="section-title">🤖 AI Agent Trace</div>
+          <div class="technical-box">
+            <div class="agent-row">
+              <span>Brand Check:</span>
+              <div class="agent-score">
+                <div class="score-bar-bg"><div id="score-bar-brand" class="score-bar"></div></div>
+                <span id="score-val-brand"></span>
+              </div>
+            </div>
+            <div class="agent-row">
+              <span>Lookup (OSINT):</span>
+              <div class="agent-score">
+                <div class="score-bar-bg"><div id="score-bar-lookup" class="score-bar"></div></div>
+                <span id="score-val-lookup"></span>
+              </div>
+            </div>
+            <div class="agent-row">
+              <span>ML Heuristics:</span>
+              <div class="agent-score">
+                <div class="score-bar-bg"><div id="score-bar-ml" class="score-bar"></div></div>
+                <span id="score-val-ml"></span>
+              </div>
+            </div>
+            <div class="agent-row">
+              <span>Behavioral Scan:</span>
+              <div class="agent-score">
+                <div class="score-bar-bg"><div id="score-bar-behavior" class="score-bar"></div></div>
+                <span id="score-val-behavior"></span>
+              </div>
+            </div>
+          </div>
+          
+        </div>
+      </div>
     </div>
     
     <div id="error" class="hidden">
-      <p id="error-msg">Failed to connect to GaudOn Backend. Ensure the Python API is running on localhost:8000.</p>
+      <p id="error-msg">Failed to connect to GaudOn Backend. Ensure the Python API is running on the correct URL.</p>
     </div>
   </div>
 

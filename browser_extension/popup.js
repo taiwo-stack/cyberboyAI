@@ -1,5 +1,5 @@
 // Set to 'http://localhost:8000' for local development
-const BACKEND_URL = 'http://100.55.84.182';
+const BACKEND_URL = 'http://98.94.189.162';
 
 document.addEventListener('DOMContentLoaded', function() {
   const scanBtn = document.getElementById('scan-btn');
@@ -83,6 +83,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
+  const toggleDetailsBtn = document.getElementById('toggle-details');
+  const detailsPanel = document.getElementById('details-panel');
+
+  if (toggleDetailsBtn) {
+    toggleDetailsBtn.addEventListener('click', () => {
+      const isHidden = detailsPanel.classList.toggle('hidden');
+      toggleDetailsBtn.classList.toggle('active', !isHidden);
+    });
+  }
+
   function displayResult(data, url) {
     loadingDiv.classList.add('hidden');
     resultDiv.classList.remove('hidden');
@@ -120,5 +130,56 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
       redFlagsContainer.classList.add('hidden');
     }
+
+    // Populate Technical details
+    const behavior = data.behavior_result;
+    document.getElementById('ssl-issuer').textContent = behavior?.ssl_issuer || 'None/Insecure';
+    
+    const certValidity = behavior?.dynamic_findings?.days_to_expire;
+    document.getElementById('ssl-validity').textContent = typeof certValidity === 'number' ? certValidity + ' days remaining' : 'N/A';
+    
+    const certAge = behavior?.dynamic_findings?.cert_age_days;
+    document.getElementById('ssl-age').textContent = typeof certAge === 'number' ? certAge + ' days old' : 'N/A';
+
+    // Populate Redirect chain
+    const redirectList = document.getElementById('redirect-list');
+    redirectList.innerHTML = '';
+    const chain = behavior?.redirect_chain || [];
+    if (chain.length > 0) {
+      chain.forEach(hop => {
+        const li = document.createElement('li');
+        li.textContent = hop;
+        redirectList.appendChild(li);
+      });
+    } else {
+      const li = document.createElement('li');
+      li.textContent = url;
+      redirectList.appendChild(li);
+    }
+
+    // Populate Agent bars
+    function updateAgentBar(prefix, score) {
+      const bar = document.getElementById(`score-bar-${prefix}`);
+      const val = document.getElementById(`score-val-${prefix}`);
+      if (!bar || !val) return;
+
+      const scorePct = Math.round((score || 0) * 100);
+      bar.style.width = scorePct + '%';
+      val.textContent = scorePct + '%';
+
+      bar.className = 'score-bar';
+      if (score >= 0.75) {
+        bar.classList.add('dangerous');
+      } else if (score >= 0.35) {
+        bar.classList.add('suspicious');
+      } else {
+        bar.classList.add('safe');
+      }
+    }
+
+    updateAgentBar('brand', data.brand_result?.similarity_score);
+    updateAgentBar('lookup', data.lookup_result?.db_score);
+    updateAgentBar('ml', data.ml_result?.ml_score);
+    updateAgentBar('behavior', data.behavior_result?.behavior_score);
   }
 });
