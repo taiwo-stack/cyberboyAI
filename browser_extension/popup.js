@@ -17,7 +17,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const STALE_MS = 30_000; // ignore entries older than 30 s
     if (pending && pending.input && (Date.now() - pending.timestamp) < STALE_MS) {
       chrome.storage.local.remove("gaudOn_pending");
-      await runScan(pending.input, pending.input);
+      // Build a clean human-readable label for the scanned-url field.
+      // If input looks like a URL use it directly; otherwise describe the selection.
+      const inp = pending.input;
+      const isUrl = /^https?:\/\//i.test(inp) || (/^[\w-]+\.\w{2,}/.test(inp) && inp.length < 100);
+      const label = isUrl
+        ? (inp.length > 60 ? inp.substring(0, 57) + '...' : inp)
+        : `Selected text (${inp.length} chars)`;
+      await runScan(inp, label);
     }
   });
 
@@ -213,7 +220,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const certAge = behavior?.dynamic_findings?.cert_age_days;
     document.getElementById('ssl-age').textContent      = typeof certAge === 'number' ? certAge + ' days old' : 'N/A';
 
-    // Redirect chain
+    // Redirect chain — show 'No redirects' rather than dumping the input text
     const redirectList = document.getElementById('redirect-list');
     redirectList.innerHTML = '';
     const chain = behavior?.redirect_chain || [];
@@ -225,7 +232,7 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     } else {
       const li = document.createElement('li');
-      li.textContent = url;
+      li.textContent = 'No redirects detected. Direct connection.';
       redirectList.appendChild(li);
     }
 

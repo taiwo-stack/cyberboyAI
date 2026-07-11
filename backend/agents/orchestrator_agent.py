@@ -130,22 +130,54 @@ class OrchestratorAgent:
 
                 if not extracted:
                     sms_urgent_flag, sms_text = await analyze_sms_urgency(request.input)
-                    
-                    if sms_urgent_flag or email_result.email_score >= 0.5:
-                        verdict = "DANGEROUS" if email_result.email_score >= 0.75 else "SUSPICIOUS"
-                        explanation = f"No links were found, but the content is highly suspicious. {email_result.finding} {sms_text if sms_urgent_flag else ''}".strip()
+
+                    # Determine verdict from combined email score + urgency signals.
+                    # A missing URL means we cannot run URL agents, but we still
+                    # have a real email_score from the classifier — we must surface it
+                    # as a proper verdict, never as a "GREETING" which implies no input.
+                    email_score = email_result.email_score
+
+                    if email_score >= 0.75 or (sms_urgent_flag and email_score >= 0.5):
+                        verdict = "DANGEROUS"
+                        explanation = (
+                            f"No hyperlinks were found, but the message content is highly suspicious. "
+                            f"{email_result.finding} {sms_text if sms_urgent_flag else ''}"
+                        ).strip()
                         advice = "Do not share personal details or respond to the sender. If it claims to be your bank, call them through their official number."
-                        score = max(0.45 if sms_urgent_flag else 0.1, email_result.email_score)
+                        score = email_score
+                        threat_type = "phishing"
+
+                    elif email_score >= 0.40 or sms_urgent_flag:
+                        verdict = "SUSPICIOUS"
+                        explanation = (
+                            f"No hyperlinks were found, but certain patterns in the message warrant caution. "
+                            f"{email_result.finding} {sms_text if sms_urgent_flag else ''}"
+                        ).strip()
+                        advice = "Treat this message with caution. Verify the sender through an independent channel before acting."
+                        score = max(email_score, 0.40 if sms_urgent_flag else 0.0)
+                        threat_type = "phishing"
+
                     else:
-                        verdict = "GREETING"
-                        explanation = "System online. I am GaudOn, your dedicated multi-agent cybersecurity sentry. Drop a suspicious screenshot, paste a deceptive email or raw headers, or paste a malicious URL below. I will instantly analyze the threat using my multi-layer Defense-in-Depth pipeline, checking everything from linguistic intent and structural machine learning down to sandboxed DOM elements and behavioral indicators."
-                        advice = "I am ready when you are. Paste a threat to begin."
-                        score = email_result.email_score
-                    
-                    # Log email analysis trace
+                        # Low email score + no urgency signals → SAFE
+                        # A clean email IS a real analysis result; never return GREETING here.
+                        verdict = "SAFE"
+                        explanation = (
+                            f"No hyperlinks were found and the message content shows no signs of "
+                            f"social engineering or phishing. {email_result.finding}"
+                        ).strip()
+                        advice = "Content appears benign. Continue to verify unexpected requests through official channels."
+                        score = email_score
+                        threat_type = "benign"
+
+                    # Build agent trace
                     agent_trace = []
                     if email_result.execution_ms > 0:
-                        agent_trace.append(AgentTrace(agent="email", score=email_result.email_score, finding=email_result.finding, duration_ms=email_result.execution_ms))
+                        agent_trace.append(AgentTrace(
+                            agent="email",
+                            score=email_result.email_score,
+                            finding=email_result.finding,
+                            duration_ms=email_result.execution_ms
+                        ))
 
                     return VerdictResponse(
                         verdict=verdict,
@@ -153,10 +185,12 @@ class OrchestratorAgent:
                         red_flags=[sms_text] if sms_urgent_flag else [],
                         explanation=explanation,
                         advice=advice,
-                        threat_type="phishing" if (sms_urgent_flag or email_result.email_score >= 0.5) else "benign",
+                        threat_type=threat_type,
                         agents_used=["sms_extractor", "email"],
                         agent_trace=agent_trace,
-                        brand_result=None, lookup_result=None, ml_result=None, openai_result=None, behavior_result=None, email_result=email_result,
+                        brand_result=None, lookup_result=None, ml_result=None,
+                        openai_result=None, behavior_result=None,
+                        email_result=email_result,
                         processing_ms=int((time.time() - start_time) * 1000)
                     )
                 
