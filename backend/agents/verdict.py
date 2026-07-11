@@ -135,17 +135,32 @@ async def compute_verdict(
             explanation = openai.explanation if (openai and openai.openai_score >= 0.35) else "This URL has several anomalous mathematical characteristics that warrant caution."
         else:
             verdict = "SAFE"
+            import tldextract as _tld
+            target_url = behavior.redirect_chain[0] if (behavior and behavior.redirect_chain) else ""
+            ext = _tld.extract(target_url) if target_url else None
+            domain_label = f"{ext.domain}.{ext.suffix}" if (ext and ext.suffix) else ext.domain if ext else ""
+
             if ml.high_risk_features:
                 flags = [f.lower().replace(" detected", "").strip() for f in ml.high_risk_features]
                 feats_str = ", ".join(flags)
                 explanation = f"While this link possesses technical risk factors like a {feats_str}, it does not match against any global phishing databases and isn't impersonating known brands. The system therefore concludes it is a legitimate site with a slightly irregular domain structure."
+            elif is_trusted_domain and domain_label:
+                explanation = f"The domain {domain_label} is a globally trusted address and is structurally clean."
             else:
                 explanation = "This URL has a clean structure and shows no immediate signs of phishing across any threat intelligence channels."
                 
             if sms_urgent:
                 explanation = "The URL itself appears structurally safe, but the message phrasing uses urgent tactics common in scams. Proceed with caution."
-            elif email and email.email_score >= 0.5:
-                explanation = "The URL itself appears safe, but the email content is highly suspicious. Proceed with caution."
+            elif email:
+                if email.email_score >= 0.5:
+                    explanation = "The URL itself appears safe, but the email content is highly suspicious. Proceed with caution."
+                else:
+                    if is_trusted_domain and domain_label:
+                        explanation = f"The message content shows no signs of phishing, and the referenced domain ({domain_label}) is a globally trusted address."
+                    elif domain_label:
+                        explanation = f"The message content shows no signs of phishing, and the referenced domain ({domain_label}) checks out safe."
+                    else:
+                        explanation = "The message content shows no signs of phishing, and all referenced links appear clean."
 
     # ASSEMBLE red_flags list
     red_flags = []
