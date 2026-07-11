@@ -1,5 +1,5 @@
-// Set to 'http://localhost:8000' for local development
-const BACKEND_URL = 'http://98.94.189.162';
+// Set to local or API Gateway HTTPS endpoint
+const BACKEND_URL = 'https://phzuhhvgvj.execute-api.us-east-1.amazonaws.com';
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.removeAll(() => {
