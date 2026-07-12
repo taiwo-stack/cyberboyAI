@@ -1,0 +1,9 @@
+{
+  "InstanceIds": ["i-0ac0be5daf50f19a3"],
+  "DocumentName": "AWS-RunShellScript",
+  "Parameters": {
+    "commands": [
+      "docker exec backend python -c \"import traceback\nfrom tools.url_tools import extract_features\nfor url in ['foundaxia.com', 'google.com', 'inlogsysmx.com.mx', 'equipodecervezaelmoe.screenconnect.com', 'votej2umptop.fwh.is']:\n    try:\n        print('URL:', url)\n        res = extract_features(url)\n        print('Result:', bool(res))\n    except Exception as e:\n        print('Exception:', str(e))\n        traceback.print_exc()\""
+    ]
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "InstanceIds": ["i-0ac0be5daf50f19a3"],
+  "DocumentName": "AWS-RunShellScript",
+  "Parameters": {
+    "commands": [
+      "docker exec backend python -c \"import os; print('Relative Path Exists:', os.path.exists('/app/agents/../models/model.joblib')); print('Absolute Path:', os.path.abspath('/app/agents/../models/model.joblib'))\""
+    ]
+  }
+}

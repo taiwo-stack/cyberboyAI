@@ -1,0 +1,9 @@
+{
+  "InstanceIds": ["i-0ac0be5daf50f19a3"],
+  "DocumentName": "AWS-RunShellScript",
+  "Parameters": {
+    "commands": [
+      "docker exec backend python -c \"import os, joblib; path = '/app/models/model.joblib'; print('Exists:', os.path.exists(path)); print('Loading...'); model = joblib.load(path); print('Loaded model:', type(model))\""
+    ]
+  }
+}

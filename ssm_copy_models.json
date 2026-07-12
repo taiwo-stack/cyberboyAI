@@ -1,0 +1,15 @@
+{
+  "InstanceIds": ["i-0ac0be5daf50f19a3"],
+  "DocumentName": "AWS-RunShellScript",
+  "Parameters": {
+    "commands": [
+      "echo '=== Copying models into container ==='",
+      "docker cp /tmp/model.joblib backend:/app/models/model.joblib",
+      "docker cp /tmp/email_model.joblib backend:/app/models/email_model.joblib",
+      "docker cp /tmp/email_vectorizer.joblib backend:/app/models/email_vectorizer.joblib",
+      "echo '=== Restarting container ==='",
+      "docker restart backend",
+      "echo '=== MODELS_DEPLOYED ==='"
+    ]
+  }
+}

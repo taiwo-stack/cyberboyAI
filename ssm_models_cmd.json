@@ -1,0 +1,11 @@
+{
+  "InstanceIds": ["i-0ac0be5daf50f19a3"],
+  "DocumentName": "AWS-RunShellScript",
+  "Parameters": {
+    "commands": [
+      "aws s3 cp s3://gaudon-models-upload-tmp/deploy_models.sh /tmp/deploy_models.sh",
+      "chmod +x /tmp/deploy_models.sh",
+      "/tmp/deploy_models.sh"
+    ]
+  }
+}

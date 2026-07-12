@@ -1,0 +1,9 @@
+{
+  "InstanceIds": ["i-0ac0be5daf50f19a3"],
+  "DocumentName": "AWS-RunShellScript",
+  "Parameters": {
+    "commands": [
+      "docker ps --filter name=backend"
+    ]
+  }
+}

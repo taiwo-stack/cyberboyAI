@@ -1,0 +1,18 @@
+{
+  "DocumentName": "AWS-RunShellScript",
+  "InstanceIds": ["i-0ac0be5daf50f19a3"],
+  "Parameters": {
+    "commands": [
+      "cd /home/ec2-user/cyberboyAI",
+      "git pull origin main",
+      "docker build -t cyberboy-backend:latest ./backend",
+      "docker stop cyberboy-backend || true",
+      "docker rm cyberboy-backend || true",
+      "docker run -d --name cyberboy-backend --env-file /home/ec2-user/.env -p 8000:8000 cyberboy-backend:latest",
+      "sleep 5",
+      "docker ps | grep cyberboy-backend",
+      "echo 'DEPLOY COMPLETE'"
+    ]
+  },
+  "TimeoutSeconds": 300
+}

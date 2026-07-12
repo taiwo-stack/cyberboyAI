@@ -1,0 +1,12 @@
+{
+  "InstanceIds": ["i-0ac0be5daf50f19a3"],
+  "DocumentName": "AWS-RunShellScript",
+  "Parameters": {
+    "commands": [
+      "echo '=== /app directory ==='",
+      "docker exec backend ls -la /app",
+      "echo '=== /app/models directory ==='",
+      "docker exec backend ls -la /app/models || docker exec backend ls -la /app/agents/../models"
+    ]
+  }
+}
