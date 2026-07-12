@@ -142,6 +142,11 @@ async def compute_verdict(
             # Hard cap: clean reputation + AI-confirmed legit → cannot be DANGEROUS
             final = min(final, 0.42)
 
+        # Enforce minimum SUSPICIOUS score if ML model is highly confident (>= 0.85)
+        # unless it is a verified trusted domain.
+        if ml.ml_score >= 0.85 and not is_trusted_domain:
+            final = max(final, 0.35)
+
         score = round(final, 4)
         # VERDICT THRESHOLDS
         if score >= 0.75:
@@ -262,7 +267,11 @@ async def compute_verdict(
         
     else:
         if red_flags:
-            advice = "This URL triggered some minor structural warnings, but our deep scans found no active malice. It is safe to browse, but avoid downloading unexpected files."
+            red_flag_str = " ".join(red_flags).lower()
+            if any(term in red_flag_str for term in ("screenconnect", "remote support", "impersonation")):
+                advice = "WARNING: Although the domain itself is verified, it uses remote support or hosting tools that are commonly abused. Proceed with caution and do not install any software unless you explicitly trust the sender."
+            else:
+                advice = "This URL triggered some minor structural warnings, but our deep scans found no active malice. It is safe to browse, but avoid downloading unexpected files."
         else:
             advice = "This link checked out perfectly clean across all 8 security layers. You are completely safe to proceed."
 

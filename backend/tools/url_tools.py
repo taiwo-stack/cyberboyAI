@@ -54,9 +54,8 @@ def extract_features(url: str, skip_whois: bool = False) -> dict:
             domain_age = 180
         else:
             raw_domain_age = get_domain_age_days(domain_full)
-            # -1 means WHOIS is blocked/private/timed-out — use neutral 180 days
-            # so the ML model doesn't treat "unknown" as "brand-new domain (high risk)"
-            domain_age = raw_domain_age if raw_domain_age >= 0 else 180
+            # -1 means WHOIS is blocked/private/timed-out — return None to represent missing data
+            domain_age = raw_domain_age if raw_domain_age >= 0 else None
 
         brand_similarity = 0.0 # Placeholder
         

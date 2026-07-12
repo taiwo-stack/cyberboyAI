@@ -50,7 +50,13 @@ class MLAgent:
         """Analyzes a URL using the trained ML model with whitelist override."""
         start_time = time.time()
         if self.model is None:
-            return MLAgentResult(ml_score=0.0, features={}, high_risk_features=[])
+            return MLAgentResult(
+                ml_score=0.50,
+                features={},
+                high_risk_features=[],
+                finding="WARNING: ML model failed to load. Fallback to 50% confidence.",
+                execution_ms=int((time.time() - start_time) * 1000)
+            )
 
         try:
             # --- WHITELIST CHECK FIRST ---
@@ -67,10 +73,21 @@ class MLAgent:
             # --- FEATURE EXTRACTION ---
             feat_dict = extract_features(url)
             if not feat_dict:
-                return MLAgentResult(ml_score=0.0, features={}, high_risk_features=[], finding="Feature extraction failed.")
+                return MLAgentResult(
+                    ml_score=0.50,
+                    features={},
+                    high_risk_features=[],
+                    finding="WARNING: ML feature extraction failed. Fallback to 50% confidence.",
+                    execution_ms=int((time.time() - start_time) * 1000)
+                )
 
             # --- MODEL INFERENCE (Multi-Class) ---
-            vector = [feat_dict.get(name, 0) for name in self.feature_names]
+            vector = []
+            for name in self.feature_names:
+                val = feat_dict.get(name, 0)
+                if val is None:
+                    val = 180 if name == "domain_age_days" else 0
+                vector.append(val)
             probs = self.model.predict_proba(np.array([vector]))[0]
             
             # ml_score is 1.0 - prob(benign)
@@ -115,15 +132,18 @@ class MLAgent:
                     # No hard threshold was individually breached, but the combined
                     # feature vector pattern still closely matches phishing profiles in
                     # the training corpus. Surface the dominant contributing feature.
-                    age = feat_dict.get("domain_age_days", 180)
-                    # Normalised age contribution: 0 days = max risk (1.0), 365 days = zero risk (0.0).
-                    # The model was trained on this normalised scale, so we invert it to get
-                    # an intuitive "age risk" percentage for the finding string.
-                    age_risk_pct = max(0.0, (1.0 - age / 365.0)) * 100
-                    age_note = (
-                        f"Primary signal: domain registration age ({age}d, ~{age_risk_pct:.0f}% age-risk) "
-                        f"pattern-matches known phishing registrations in the training corpus."
-                    )
+                    age = feat_dict.get("domain_age_days")
+                    if age is None or age == -1:
+                        age_note = "Domain age is unknown (WHOIS lookup failed/private)."
+                    else:
+                        # Normalised age contribution: 0 days = max risk (1.0), 365 days = zero risk (0.0).
+                        # The model was trained on this normalised scale, so we invert it to get
+                        # an intuitive "age risk" percentage for the finding string.
+                        age_risk_pct = max(0.0, (1.0 - age / 365.0)) * 100
+                        age_note = (
+                            f"Primary signal: domain registration age ({age}d, ~{age_risk_pct:.0f}% age-risk) "
+                            f"pattern-matches known phishing registrations in the training corpus."
+                        )
                     finding = (
                         f"Classified as {threat_type} ({ml_score*100:.1f}% risk). "
                         f"No individual structural threshold was breached, but the combined "
@@ -143,4 +163,10 @@ class MLAgent:
 
         except Exception as e:
             print(f"ML Processing Error: {e}")
-            return MLAgentResult(ml_score=0.0, features={}, high_risk_features=[], finding=f"Processing error: {str(e)}")
+            return MLAgentResult(
+                ml_score=0.50,
+                features={},
+                high_risk_features=[],
+                finding=f"WARNING: ML processing error: {str(e)}. Fallback to 50% confidence.",
+                execution_ms=int((time.time() - start_time) * 1000)
+            )
