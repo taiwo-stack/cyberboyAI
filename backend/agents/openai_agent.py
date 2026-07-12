@@ -254,6 +254,14 @@ Domain Brand Match Hint: {brand_ctx}
             brand_info = data.get("identified_brand")
             off_domain = data.get("official_domain") or ""
 
+            # Use GPT's own score. If GPT omits or returns 0 (which can mean "not sure"),
+            # fall back to 0.1 (neutral) — NOT ml_score, to preserve independence.
+            raw_score = data.get("openai_score")
+            if raw_score is None:
+                gpt_score = 0.1
+            else:
+                gpt_score = float(raw_score)
+
             # ── Impersonation guard ──────────────────────────────────────────────
             # GPT returns the brand it sees.  We only say "impersonation" if
             # the *official* domain label (e.g. "paypal") differs from the
@@ -294,14 +302,6 @@ Domain Brand Match Hint: {brand_ctx}
                 finding = "AI Analysis complete. No threats detected across all 7 threat vectors."
             else:
                 finding = f"AI Analysis complete. Ambiguous signals detected (score: {gpt_score*100:.0f}%). Proceed with caution."
-
-            # Use GPT's own score. If GPT omits or returns 0 (which can mean "not sure"),
-            # fall back to 0.1 (neutral) — NOT ml_score, to preserve independence.
-            raw_score = data.get("openai_score")
-            if raw_score is None:
-                gpt_score = 0.1
-            else:
-                gpt_score = float(raw_score)
 
             return OpenAIAgentResult(
                 openai_score=gpt_score,
