@@ -79,25 +79,39 @@ export default function DeepEvidence({ verdict }: { verdict: VerdictResponse }) 
           </div>
 
           {/* 2. ML Feature Matrix */}
-          {ml?.features && (
+          {ml && (
             <div className="space-y-2">
               <h5 className="text-[10px] text-emerald-400/60 uppercase flex items-center gap-2">
-                <Fingerprint className="w-3 h-3" /> HEURISTIC_FEATURE_MATRIX
+                <Fingerprint className="w-3 h-3" /> ML Risk Signals
               </h5>
               <div className="bg-[#050d1a] border border-slate-800 rounded-lg p-3">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-2">
-                  {Object.entries(ml.features).slice(0, 12).map(([key, val]: [string, any]) => (
-                    <div key={key} className="flex justify-between items-center border-b border-white/5 pb-1">
-                      <span className="text-[9px] text-slate-500 capitalize">{key.replace(/_/g, ' ')}</span>
-                      <span className="text-[10px] text-slate-300 font-bold">
-                        {typeof val === 'number' ? val.toFixed(2) : String(val)}
-                      </span>
+                {ml.features && Object.keys(ml.features).length > 0 ? (
+                  <>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-2">
+                      {Object.entries(ml.features).slice(0, 12).map(([key, val]: [string, any]) => (
+                        <div key={key} className="flex justify-between items-center border-b border-white/5 pb-1">
+                          <span className="text-[9px] text-slate-500 capitalize">{key.replace(/_/g, ' ')}</span>
+                          <span className={`text-[10px] font-bold ${
+                            typeof val === 'number' && val > 0.5
+                              ? 'text-red-400'
+                              : 'text-slate-300'
+                          }`}>
+                            {typeof val === 'number' ? val.toFixed(2) : val ? '✓' : '✗'}
+                          </span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-                <p className="mt-3 text-[9px] text-slate-600 italic">
-                  * ML vectors represent normalized structural patterns used by the RandomForest ensemble.
-                </p>
+                    <p className="mt-3 text-[9px] text-slate-600 italic">
+                      Showing top 12 of {Object.keys(ml.features).length} structural signals analyzed by the RandomForest model.
+                    </p>
+                  </>
+                ) : (
+                  <div className="text-slate-600 text-[10px] p-2 bg-slate-900/30 rounded border border-white/5 italic">
+                    {ml.finding?.includes('WARNING') 
+                      ? 'ML model not available on server — score estimated from heuristics only.'
+                      : 'Feature data not returned for this scan type.'}
+                  </div>
+                )}
               </div>
             </div>
           )}
