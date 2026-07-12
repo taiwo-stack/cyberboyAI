@@ -1,6 +1,6 @@
 import re
 import tldextract
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 
 # Phase 1 — Explicit URL pattern: finds anything starting with http/https/www
 # Intentionally has NO TLD length restriction — that validation is delegated to tldextract
@@ -63,6 +63,40 @@ def extract_url_from_message(message: str) -> Optional[str]:
     return None
 
 
+def extract_urls_from_message(message: str) -> List[str]:
+    """
+    Extracts all unique valid URLs found in a raw text message.
+    Preserves the order of their appearance.
+    """
+    urls = []
+    # Phase 1: Explicit protocol/www prefix
+    for match in _EXPLICIT_URL_RE.finditer(message):
+        candidate = match.group(0).rstrip(".,;:!?)'\"")
+        if _is_real_domain(candidate):
+            urls.append(candidate)
+
+    # Phase 2: Bare domain patterns
+    for match in _BARE_DOMAIN_RE.finditer(message):
+        candidate = match.group(0).rstrip(".,;:!?)'\"")
+        if len(candidate) < 6:
+            continue
+        # Avoid matching a bare domain that is already captured inside a Phase 1 URL (e.g. google.com inside http://google.com)
+        if any(candidate in existing for existing in urls):
+            continue
+        if _is_real_domain(candidate):
+            urls.append(candidate)
+
+    # Return unique urls preserving order
+    seen = set()
+    unique_urls = []
+    for u in urls:
+        u_lower = u.lower()
+        if u_lower not in seen:
+            seen.add(u_lower)
+            unique_urls.append(u)
+    return unique_urls
+
+
 async def openai_extract_url(message: str) -> Optional[str]:
     """
     Fallback URL extractor powered by OpenAI.
@@ -113,6 +147,54 @@ async def openai_extract_url(message: str) -> Optional[str]:
         pass
 
     return None
+
+
+async def openai_extract_urls(message: str) -> List[str]:
+    """
+    Fallback URL list extractor powered by OpenAI.
+    Called when regex+tldextract finds nothing, or to detect highly obfuscated URLs.
+    """
+    import os
+    import json
+    from openai import AsyncOpenAI
+
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        return []
+
+    try:
+        client = AsyncOpenAI(api_key=api_key)
+        response = await client.chat.completions.create(
+            model="gpt-4o-mini",
+            temperature=0,
+            max_tokens=200,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a URL extraction assistant. "
+                        "Extract ALL URLs or web addresses from the message below, including: "
+                        "defanged URLs (hxxp, [.], (dot)), spelled-out domains, obfuscated links. "
+                        "Reconstruct each actual URL in proper format (https://domain.tld/path). "
+                        "Respond ONLY with a JSON object containing a list of URLs: {\"urls\": [\"<extracted url 1>\", \"<extracted url 2>\", ...]}. "
+                        "If no URLs exist, return {\"urls\": []}."
+                    )
+                },
+                {"role": "user", "content": f"Message: {message}"}
+            ]
+        )
+        data = json.loads(response.choices[0].message.content)
+        extracted = data.get("urls", [])
+        
+        validated = []
+        for url in extracted:
+            if url and _is_real_domain(url):
+                validated.append(url)
+        return validated
+    except Exception:
+        pass
+
+    return []
 
 
 

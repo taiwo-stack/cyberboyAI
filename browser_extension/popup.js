@@ -49,6 +49,53 @@ document.addEventListener('DOMContentLoaded', function() {
           const injectionResults = await chrome.scripting.executeScript({
             target: { tabId: tab.id },
           func: () => {
+            const excludedDomains = ['google.com', 'yahoo.com', 'live.com', 'office.com'];
+
+            const extractLinks = (containerEl) => {
+              const urls = [];
+              
+              // 1. Standard anchors
+              containerEl.querySelectorAll('a').forEach(a => {
+                if (a.href) urls.push(a.href);
+              });
+              
+              // 2. Form action endpoints (often used in malicious buttons/phishing mail)
+              containerEl.querySelectorAll('form[action]').forEach(form => {
+                if (form.action) urls.push(form.action);
+              });
+              
+              // 3. Custom attributes for custom redirection elements
+              containerEl.querySelectorAll('[data-href], [data-url], [data-link]').forEach(el => {
+                const url = el.getAttribute('data-href') || el.getAttribute('data-url') || el.getAttribute('data-link');
+                if (url) urls.push(url);
+              });
+              
+              // 4. Inline Javascript redirections
+              containerEl.querySelectorAll('[onclick]').forEach(el => {
+                const clickAttr = el.getAttribute('onclick');
+                if (clickAttr) {
+                  const match = clickAttr.match(/(https?:\/\/[^\s'"]+)/i);
+                  if (match) urls.push(match[0]);
+                }
+              });
+
+              // Process, validate, filter
+              return [...new Set(urls)]
+                .map(url => url.trim())
+                .filter(url => {
+                  try {
+                    const parsed = new URL(url);
+                    if (!parsed.protocol.startsWith('http')) return false;
+                    const host = parsed.hostname.toLowerCase();
+                    return !excludedDomains.some(d => host === d || host.endsWith('.' + d));
+                  } catch (e) {
+                    if (!url.startsWith('http')) return false;
+                    const urlLower = url.toLowerCase();
+                    return !excludedDomains.some(d => urlLower.includes(d));
+                  }
+                });
+            };
+
             // 1. Highlighted text — highest priority
             const selection = window.getSelection().toString().trim();
             if (selection.length > 10) {
@@ -57,14 +104,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const range = window.getSelection().getRangeAt(0);
                 const container = document.createElement("div");
                 container.appendChild(range.cloneContents());
-                const links = Array.from(container.querySelectorAll('a'))
-                  .map(a => a.href)
-                  .filter(href => href.startsWith('http') &&
-                                 !href.includes('google.com') &&
-                                 !href.includes('yahoo.com') &&
-                                 !href.includes('live.com') &&
-                                 !href.includes('office.com'));
-                selectionLinks = [...new Set(links)];
+                selectionLinks = extractLinks(container);
               } catch (err) {}
               return { text: selection, links: selectionLinks, type: "selection" };
             }
@@ -78,28 +118,19 @@ document.addEventListener('DOMContentLoaded', function() {
               const els = document.querySelectorAll('.a3s, .ii.gt, div[role="listitem"] div.a3s');
               els.forEach(el => {
                 emailText += el.innerText + "\n";
-                Array.from(el.querySelectorAll('a'))
-                  .map(a => a.href)
-                  .filter(h => h.startsWith('http') && !h.includes('google.com'))
-                  .forEach(h => emailLinks.push(h));
+                extractLinks(el).forEach(h => emailLinks.push(h));
               });
             } else if (host.includes("outlook.live.com") || host.includes("outlook.office.com")) {
               const els = document.querySelectorAll('div[role="document"], div[aria-label="Email message body"], .ReadingPane');
               els.forEach(el => {
                 emailText += el.innerText + "\n";
-                Array.from(el.querySelectorAll('a'))
-                  .map(a => a.href)
-                  .filter(h => h.startsWith('http') && !h.includes('live.com') && !h.includes('office.com'))
-                  .forEach(h => emailLinks.push(h));
+                extractLinks(el).forEach(h => emailLinks.push(h));
               });
             } else if (host.includes("mail.yahoo.com")) {
               const els = document.querySelectorAll('div[data-test-id="message-view-body"], .thread-body');
               els.forEach(el => {
                 emailText += el.innerText + "\n";
-                Array.from(el.querySelectorAll('a'))
-                  .map(a => a.href)
-                  .filter(h => h.startsWith('http') && !h.includes('yahoo.com'))
-                  .forEach(h => emailLinks.push(h));
+                extractLinks(el).forEach(h => emailLinks.push(h));
               });
             }
 

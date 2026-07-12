@@ -1,12 +1,13 @@
 import time
 import re
 import asyncio
-from typing import Optional
+from typing import Optional, List, Dict
 
 from schemas.agent_inputs import AnalyzeRequest
 from schemas.agent_outputs import (
     VerdictResponse, BrandAgentResult, LookupAgentResult, 
-    MLAgentResult, OpenAIAgentResult, BehavioralAgentResult, AgentTrace
+    MLAgentResult, OpenAIAgentResult, BehavioralAgentResult, AgentTrace,
+    EmailAgentResult
 )
 from agents.brand_agent import BrandAgent
 from agents.lookup_agent import LookupAgent
@@ -84,119 +85,18 @@ class OrchestratorAgent:
         except Exception as e:
             print(f"Error storing submission to Supabase: {e}")
 
-    async def analyze(self, request: AnalyzeRequest) -> VerdictResponse:
+    async def _analyze_single_url(
+        self,
+        target_url: str,
+        email_result: Optional[EmailAgentResult],
+        sms_urgent: bool,
+        sms_msg: str,
+        start_time: float
+    ) -> VerdictResponse:
         """
-        The main conduit for the pipeline. Parses input, runs respective agents, checks thresholds,
-        calls the verdict engine, and logs to Supabase asynchronously.
+        Runs the full analysis pipeline for a single target URL.
         """
-        start_time = time.time()
-        
-        # 0. Handle OCR from Image if provided
-        if request.image_base64:
-            from tools.vision_tools import extract_text_from_image
-            print("[Orchestrator] Image detected. Running OCR via VisionTool...")
-            extracted_text = await extract_text_from_image(request.image_base64)
-            if extracted_text:
-                print(f"[Orchestrator] OCR Result: {extracted_text}")
-                # Combine the extracted text with any text the user typed
-                request.input = f"{extracted_text}\n\n{request.input}".strip()
-            else:
-                print("[Orchestrator] VisionTool failed to extract text.")
-        
         try:
-            # 1. Detect Input Type
-            input_type = self._detect_input_type(request.input)
-            
-            # 1. SMS/Message/Email Handling
-            sms_urgent = False
-            sms_msg = ""
-            target_url = request.input
-            email_result = None
-
-            if input_type in ["message", "email"]:
-                from tools.sms_tools import extract_url_from_message, analyze_sms_urgency, openai_extract_url
-                extracted = extract_url_from_message(request.input)
-                
-                # Always run email classifier on raw text input
-                email_result = await self.email.check(request.input)
-
-                # OpenAI fallback: catches defanged URLs, spelled-out domains, obfuscated links
-                # that no regex can reliably detect
-                if not extracted:
-                    print("[Orchestrator] Regex found no URL — trying OpenAI URL extractor...")
-                    extracted = await openai_extract_url(request.input)
-                    if extracted:
-                        print(f"[Orchestrator] OpenAI extracted URL: {extracted}")
-
-                if not extracted:
-                    sms_urgent_flag, sms_text = await analyze_sms_urgency(request.input)
-
-                    # Determine verdict from combined email score + urgency signals.
-                    # A missing URL means we cannot run URL agents, but we still
-                    # have a real email_score from the classifier — we must surface it
-                    # as a proper verdict, never as a "GREETING" which implies no input.
-                    email_score = email_result.email_score
-
-                    if email_score >= 0.75 or (sms_urgent_flag and email_score >= 0.5):
-                        verdict = "DANGEROUS"
-                        explanation = (
-                            f"No hyperlinks were found, but the message content is highly suspicious. "
-                            f"{email_result.finding} {sms_text if sms_urgent_flag else ''}"
-                        ).strip()
-                        advice = "Do not share personal details or respond to the sender. If it claims to be your bank, call them through their official number."
-                        score = email_score
-                        threat_type = "phishing"
-
-                    elif email_score >= 0.40 or sms_urgent_flag:
-                        verdict = "SUSPICIOUS"
-                        explanation = (
-                            f"No hyperlinks were found, but certain patterns in the message warrant caution. "
-                            f"{email_result.finding} {sms_text if sms_urgent_flag else ''}"
-                        ).strip()
-                        advice = "Treat this message with caution. Verify the sender through an independent channel before acting."
-                        score = max(email_score, 0.40 if sms_urgent_flag else 0.0)
-                        threat_type = "phishing"
-
-                    else:
-                        # Low email score + no urgency signals → SAFE
-                        # A clean email IS a real analysis result; never return GREETING here.
-                        verdict = "SAFE"
-                        explanation = (
-                            f"No hyperlinks were found and the message content shows no signs of "
-                            f"social engineering or phishing. {email_result.finding}"
-                        ).strip()
-                        advice = "Content appears benign. Continue to verify unexpected requests through official channels."
-                        score = email_score
-                        threat_type = "benign"
-
-                    # Build agent trace
-                    agent_trace = []
-                    if email_result.execution_ms > 0:
-                        agent_trace.append(AgentTrace(
-                            agent="email",
-                            score=email_result.email_score,
-                            finding=email_result.finding,
-                            duration_ms=email_result.execution_ms
-                        ))
-
-                    return VerdictResponse(
-                        verdict=verdict,
-                        score=score,
-                        red_flags=[sms_text] if sms_urgent_flag else [],
-                        explanation=explanation,
-                        advice=advice,
-                        threat_type=threat_type,
-                        agents_used=["sms_extractor", "email"],
-                        agent_trace=agent_trace,
-                        brand_result=None, lookup_result=None, ml_result=None,
-                        openai_result=None, behavior_result=None,
-                        email_result=email_result,
-                        processing_ms=int((time.time() - start_time) * 1000)
-                    )
-                
-                target_url = extracted
-                sms_urgent, sms_msg = await analyze_sms_urgency(request.input)
-
             # 2. Normalize
             target_url = self._normalize_url(target_url)
 
@@ -235,12 +135,12 @@ class OrchestratorAgent:
                 _is_bare_trusted = False
                 _skip_brand = False
 
-            # 4. Database Cache Fast-Path
+            # 4. Database Cache Fast-Path (per URL)
             from datetime import datetime, timedelta, timezone
             try:
                 recent_res = await db(lambda: supabase.table("threat_submissions")
                     .select("verdict, final_score, red_flags, explanation, advice, submitted_at, agent_trace")
-                    .eq("raw_input", request.input)
+                    .eq("raw_input", target_url)
                     .order("submitted_at", desc=True)
                     .limit(1)
                     .execute())
@@ -265,7 +165,7 @@ class OrchestratorAgent:
                             processing_ms=int((time.time() - start_time) * 1000)
                         )
             except Exception as e:
-                print(f"[Orchestrator] Cache check failed (SSL/Network): {e}. Skipping cache.")
+                print(f"[Orchestrator] Cache check failed (SSL/Network) for {target_url}: {e}. Skipping cache.")
 
             # 5. Run Tier 1 Agents in Parallel
             from schemas.agent_outputs import BrandAgentResult
@@ -357,21 +257,262 @@ class OrchestratorAgent:
                     "red_flags": response.red_flags + cloak_flags,
                 })
 
-            # 7. Store to Database (Fire-and-forget)
+            # Store to Database (Fire-and-forget)
             asyncio.create_task(self._store_submission(target_url, response))
             return response
 
         except Exception as e:
             import traceback
             error_msg = traceback.format_exc()
+            print(f"\n[Orchestrator] URL ANALYSIS ERROR for {target_url}:\n{error_msg}")
+            
+            return VerdictResponse(
+                verdict="SUSPICIOUS",
+                score=0.5,
+                red_flags=[f"URL Scan Error: {str(e)}"],
+                explanation=f"Encountered an error while scanning {target_url}.",
+                advice="Standard caution advised.",
+                threat_type="phishing",
+                agents_used=["error_handler"],
+                agent_trace=[],
+                brand_result=None, lookup_result=None, ml_result=None, openai_result=None,
+                processing_ms=int((time.time() - start_time) * 1000)
+            )
+
+    async def analyze(self, request: AnalyzeRequest) -> VerdictResponse:
+        """
+        The main conduit for the pipeline. Parses input, runs respective agents, checks thresholds,
+        calls the verdict engine, and logs to Supabase asynchronously.
+        """
+        start_time = time.time()
+        
+        # 0. Handle OCR from Image if provided
+        if request.image_base64:
+            from tools.vision_tools import extract_text_from_image
+            print("[Orchestrator] Image detected. Running OCR via VisionTool...")
+            extracted_text = await extract_text_from_image(request.image_base64)
+            if extracted_text:
+                print(f"[Orchestrator] OCR Result: {extracted_text}")
+                # Combine the extracted text with any text the user typed
+                request.input = f"{extracted_text}\n\n{request.input}".strip()
+            else:
+                print("[Orchestrator] VisionTool failed to extract text.")
+        
+        try:
+            # 1. Detect Input Type
+            input_type = self._detect_input_type(request.input)
+            
+            # Global Database Cache check on raw input
+            from datetime import datetime, timedelta, timezone
+            try:
+                recent_res = await db(lambda: supabase.table("threat_submissions")
+                    .select("verdict, final_score, red_flags, explanation, advice, submitted_at, agent_trace")
+                    .eq("raw_input", request.input)
+                    .order("submitted_at", desc=True)
+                    .limit(1)
+                    .execute())
+                
+                if recent_res.data:
+                    last_sub = recent_res.data[0]
+                    last_time = datetime.fromisoformat(last_sub["submitted_at"])
+                    if datetime.now(timezone.utc) - last_time < timedelta(hours=24) and last_sub["verdict"] != "PENDING_REVIEW":
+                        stored_trace = last_sub.get("agent_trace", [])
+                        reconstructed_trace = [AgentTrace(**t) for t in stored_trace] if stored_trace else []
+
+                        return VerdictResponse(
+                            verdict=last_sub["verdict"],
+                            score=last_sub["final_score"],
+                            red_flags=last_sub["red_flags"],
+                            explanation=last_sub["explanation"] + " (Retrieved from recent database scan)",
+                            advice=last_sub["advice"],
+                            threat_type=last_sub.get("threat_type", "benign" if last_sub["verdict"] == "SAFE" else "phishing"),
+                            agents_used=["database_cache"],
+                            agent_trace=reconstructed_trace,
+                            brand_result=None, lookup_result=None, ml_result=None, openai_result=None,
+                            processing_ms=int((time.time() - start_time) * 1000)
+                        )
+            except Exception as e:
+                print(f"[Orchestrator] Global cache check failed: {e}. Skipping cache.")
+
+            # 2. Extract links and classify text
+            extracted_urls = []
+            sms_urgent = False
+            sms_msg = ""
+            email_result = None
+
+            if input_type in ["message", "email"]:
+                from tools.sms_tools import extract_urls_from_message, analyze_sms_urgency, openai_extract_urls
+                extracted_urls = extract_urls_from_message(request.input)
+                
+                # Always run email classifier on raw text input
+                email_result = await self.email.check(request.input)
+
+                # Fallback to LLM extraction if regex found nothing
+                if not extracted_urls:
+                    print("[Orchestrator] Regex found no URL — trying OpenAI URL extractor...")
+                    extracted_urls = await openai_extract_urls(request.input)
+                    if extracted_urls:
+                        print(f"[Orchestrator] OpenAI extracted URLs: {extracted_urls}")
+
+                sms_urgent, sms_msg = await analyze_sms_urgency(request.input)
+            else:
+                # Direct URL/IP input
+                extracted_urls = [request.input]
+
+            # 3. If NO URLs were found in the content
+            if not extracted_urls:
+                email_score = email_result.email_score if email_result else 0.0
+
+                if email_score >= 0.75 or (sms_urgent and email_score >= 0.5):
+                    verdict = "DANGEROUS"
+                    explanation = (
+                        f"No hyperlinks were found, but the message content is highly suspicious. "
+                        f"{email_result.finding if email_result else ''} {sms_msg if sms_urgent else ''}"
+                    ).strip()
+                    advice = "Do not share personal details or respond to the sender. If it claims to be your bank, call them through their official number."
+                    score = email_score
+                    threat_type = "phishing"
+
+                elif email_score >= 0.40 or sms_urgent:
+                    verdict = "SUSPICIOUS"
+                    explanation = (
+                        f"No hyperlinks were found, but certain patterns in the message warrant caution. "
+                        f"{email_result.finding if email_result else ''} {sms_msg if sms_urgent else ''}"
+                    ).strip()
+                    advice = "Treat this message with caution. Verify the sender through an independent channel before acting."
+                    score = max(email_score, 0.40 if sms_urgent else 0.0)
+                    threat_type = "phishing"
+
+                else:
+                    verdict = "SAFE"
+                    explanation = (
+                        f"No hyperlinks were found and the message content shows no signs of "
+                        f"social engineering or phishing. {email_result.finding if email_result else ''}"
+                    ).strip()
+                    advice = "Content appears benign. Continue to verify unexpected requests through official channels."
+                    score = email_score
+                    threat_type = "benign"
+
+                agent_trace = []
+                if email_result and email_result.execution_ms > 0:
+                    agent_trace.append(AgentTrace(
+                        agent="email",
+                        score=email_result.email_score,
+                        finding=email_result.finding,
+                        duration_ms=email_result.execution_ms
+                    ))
+
+                response = VerdictResponse(
+                    verdict=verdict,
+                    score=score,
+                    red_flags=[sms_msg] if sms_urgent else [],
+                    explanation=explanation,
+                    advice=advice,
+                    threat_type=threat_type,
+                    agents_used=["sms_extractor", "email"],
+                    agent_trace=agent_trace,
+                    brand_result=None, lookup_result=None, ml_result=None,
+                    openai_result=None, behavior_result=None,
+                    email_result=email_result,
+                    processing_ms=int((time.time() - start_time) * 1000)
+                )
+                asyncio.create_task(self._store_submission(request.input, response))
+                return response
+
+            # 4. We have URLs! Normalize and deduplicate them first to avoid duplicate scans
+            normalized_urls = []
+            seen_normalized = set()
+            for url in extracted_urls:
+                norm = self._normalize_url(url).strip().lower()
+                norm_clean = norm.rstrip("/")
+                if norm_clean not in seen_normalized:
+                    seen_normalized.add(norm_clean)
+                    normalized_urls.append(url)
+
+            target_urls = normalized_urls[:5]
+            
+            tasks = [
+                self._analyze_single_url(url, email_result, sms_urgent, sms_msg, start_time)
+                for url in target_urls
+            ]
+            url_responses = await asyncio.gather(*tasks)
+
+            # 5. Aggregate multiple URL results
+            # Rank: DANGEROUS > SUSPICIOUS > SAFE
+            def verdict_rank(v):
+                if v == "DANGEROUS": return 3
+                if v == "SUSPICIOUS": return 2
+                return 1
+                
+            sorted_responses = sorted(
+                url_responses,
+                key=lambda r: (verdict_rank(r.verdict), r.score),
+                reverse=True
+            )
+            
+            worst_response = sorted_responses[0]
+            
+            # Combine red flags, traces, and agents used
+            all_red_flags = []
+            all_traces = []
+            all_agents_used = set()
+            seen_traces = set()
+            
+            for resp in url_responses:
+                for flag in resp.red_flags:
+                    if flag not in all_red_flags:
+                        all_red_flags.append(flag)
+                for t in resp.agent_trace:
+                    trace_key = (t.agent, t.score, t.finding)
+                    if trace_key not in seen_traces:
+                        seen_traces.add(trace_key)
+                        all_traces.append(t)
+                all_agents_used.update(resp.agents_used)
+                
+            # If multiple URLs were scanned, append summary list to the explanation
+            if len(target_urls) > 1:
+                verdicts_summary = ", ".join(
+                    f"'{resp.brand_result.closest_brand if (resp.brand_result and resp.brand_result.closest_brand) else resp.agent_trace[0].finding.split(':')[0] if (resp.agent_trace) else 'URL'}' ({resp.verdict})"
+                    for resp in url_responses
+                )
+                explanation_prefix = f"Scanned {len(target_urls)} URLs found in content. Verdicts: {verdicts_summary}. "
+                aggregated_explanation = explanation_prefix + worst_response.explanation
+            else:
+                aggregated_explanation = worst_response.explanation
+
+            final_response = VerdictResponse(
+                verdict=worst_response.verdict,
+                score=worst_response.score,
+                red_flags=all_red_flags,
+                explanation=aggregated_explanation,
+                advice=worst_response.advice,
+                threat_type=worst_response.threat_type,
+                identified_brand=worst_response.identified_brand,
+                agents_used=list(all_agents_used),
+                agent_trace=all_traces,
+                brand_result=worst_response.brand_result,
+                lookup_result=worst_response.lookup_result,
+                ml_result=worst_response.ml_result,
+                openai_result=worst_response.openai_result,
+                behavior_result=worst_response.behavior_result,
+                email_result=email_result or worst_response.email_result,
+                processing_ms=int((time.time() - start_time) * 1000)
+            )
+
+            # Store the aggregated verdict for this raw input in the database
+            asyncio.create_task(self._store_submission(request.input, final_response))
+            return final_response
+
+        except Exception as e:
+            import traceback
+            error_msg = traceback.format_exc()
             print(f"\n[Orchestrator] CRITICAL ANALYSIS ERROR:\n{error_msg}")
             
-            # Return a graceful "System Error" response instead of crashing the 500
             return VerdictResponse(
-                verdict="SUSPICIOUS", # Safer to flag as suspicious during engine failure
+                verdict="SUSPICIOUS",
                 score=0.5,
                 red_flags=[f"System Engine Error: {str(e)}"],
-                explanation="The GaudOn engine encountered a technical error during analysis. This can happen with extremely obfuscated URLs or temporary network instability.",
+                explanation="The GaudOn engine encountered a technical error during analysis.",
                 advice="Standard caution advised. Re-scan the link in a few minutes.",
                 threat_type="phishing",
                 agents_used=["error_handler"],
