@@ -289,7 +289,8 @@ async def compute_verdict(
     ml_score_pct = round(ml.ml_score * 100, 1)
 
     trace = []
-    trace.append(AgentTrace(agent="brand", score=brand.similarity_score, finding=brand.finding or "No brand impersonation detected.", duration_ms=brand.execution_ms))
+    brand_score = brand.similarity_score if brand.is_impersonation else 0.0
+    trace.append(AgentTrace(agent="brand", score=brand_score, finding=brand.finding or "No brand impersonation detected.", duration_ms=brand.execution_ms))
     trace.append(AgentTrace(agent="lookup", score=lookup.db_score, finding=lookup.finding or "Scanned clean across feeds.", duration_ms=lookup.execution_ms))
     trace.append(AgentTrace(agent="ml", score=ml.ml_score, finding=ml.finding or f"Analyzed {len(ml.features)} features.", duration_ms=ml.execution_ms))
     

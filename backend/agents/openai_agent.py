@@ -201,20 +201,31 @@ Domain Brand Match Hint: {brand_ctx}
 
         # 3. Call AI
         system_prompt = (
-            "You are a global cybersecurity forensic analyst. Analyze the page content and URL for phishing.\n\n"
+            "You are a global cybersecurity forensic analyst. Your job is to perform a comprehensive multi-vector threat analysis of the page content and URL provided.\n\n"
+            "MULTI-VECTOR THREAT DETECTION — Analyze ALL of the following, not just brand impersonation:\n"
+            "1. CREDENTIAL HARVESTING: Are there login forms, password fields, OTP/PIN prompts, or requests for banking credentials? Even without a brand logo, a credential form on a suspicious domain is a major threat signal.\n"
+            "2. SOCIAL ENGINEERING LANGUAGE: Is there urgency ('Your account will be suspended'), threats ('Act now or lose access'), authority impersonation ('HMRC', 'FBI', 'Microsoft Support'), or fear tactics?\n"
+            "3. CONTENT-CONTEXT MISMATCH: Does the page content contradict what the URL structure suggests? (e.g., URL looks like a tracking link but page asks for credit card details)\n"
+            "4. SUSPICIOUS DOWNLOADS / INSTALLS: Are there prompts to download files (.exe, .apk, .dmg), install browser extensions, or run scripts?\n"
+            "5. OBFUSCATION SIGNALS: Heavy JavaScript dependency with no readable content, encoded strings, minimal visible text, or pages that load differently without JS?\n"
+            "6. DECEPTIVE UX PATTERNS: Fake countdown timers, misleading 'click here' overlays, hidden form fields, invisible iframes, CAPTCHA abuse, or fake progress indicators?\n"
+            "7. BRAND IMPERSONATION: Does the page display logos, trademarks, or content belonging to a known brand while served from a non-official domain?\n\n"
+            "List ALL signals found across these 7 categories in the 'red_flags' array. Do not limit red_flags to brand signals only.\n\n"
             "SCORING RULE (CRITICAL):\n"
             "You MUST derive 'openai_score' entirely from the page content and URL structure you are given.\n"
             "DO NOT echo or anchor on any externally provided score. Evaluate independently:\n"
-            "  - If the page content clearly describes a legitimate service and no impersonation is evident → score 0.0–0.15\n"
-            "  - If there are suspicious forms, deceptive brand mimicry, or social engineering content → score 0.7–1.0\n"
-            "  - If ambiguous → score 0.3–0.5\n\n"
+            "  - Legitimate service with no threat signals → score 0.0–0.15\n"
+            "  - One minor structural concern, no content threats → score 0.15–0.35\n"
+            "  - Multiple structural anomalies OR ambiguous content → score 0.35–0.55\n"
+            "  - Credential forms, social engineering language, OR brand mimicry → score 0.65–0.85\n"
+            "  - Multiple active threat vectors simultaneously → score 0.85–1.0\n\n"
             "ZERO-DAY BRAND DETECTION RULE:\n"
             "1. If the host is UNREACHABLE (Status 0 / DNS Resolution Failure), YOU MUST NOT identify a brand unless the domain is a near-identical character match for a major global entity.\n"
             "2. DO NOT use similarity or 'feel' to identify brands for unreachable sites. If in doubt, set identified_brand to null.\n"
             "3. For reachable sites, extract the 'identified_brand' only if it is explicitly stated in the page content or logos.\n"
             "4. NEVER guess generic brands like 'walmart' or 'amazon' from ambiguous strings if the site is unreachable.\n\n"
             "EXPLANATION GUIDELINE:\n"
-            "The 'explanation' field must be a comprehensive, descriptive summary of ALL your findings — URL structural anomalies, page content, brand signals, and form presence.\n\n"
+            "The 'explanation' field must be a comprehensive forensic summary covering: URL structural analysis, page content review, form presence, social engineering signals, brand signals, and JavaScript dependency. Do NOT just describe what you did not find — describe what you observed across all vectors.\n\n"
             "Respond ONLY with valid JSON:\n"
             "{\n"
             "  \"openai_score\": float (0.0-1.0, YOUR OWN independent assessment),\n"
@@ -222,7 +233,7 @@ Domain Brand Match Hint: {brand_ctx}
             "  \"identified_brand\": string or null,\n"
             "  \"official_domain\": string or null,\n"
             "  \"confidence\": int (0-100),\n"
-            "  \"red_flags\": string[],\n"
+            "  \"red_flags\": string[] (one entry per distinct threat signal found across ALL 7 categories above),\n"
             "  \"explanation\": string,\n"
             "  \"advice\": string\n"
             "}"
@@ -257,6 +268,8 @@ Domain Brand Match Hint: {brand_ctx}
                 official_label != submitted_label
             )
 
+            red_flags_list = data.get("red_flags", [])
+
             if is_impersonating:
                 finding = (
                     f"AI Analysis complete. "
@@ -269,8 +282,18 @@ Domain Brand Match Hint: {brand_ctx}
                     f"Brand confirmed as '{brand_info}'. "
                     f"No impersonation of an external entity detected."
                 )
+            elif red_flags_list and gpt_score >= 0.35:
+                # Surface the primary red flag from GPT's multi-vector analysis
+                primary_flag = red_flags_list[0]
+                extra = len(red_flags_list) - 1
+                if extra > 0:
+                    finding = f"AI Analysis complete. {primary_flag} (+{extra} additional signal{'s' if extra > 1 else ''} detected)."
+                else:
+                    finding = f"AI Analysis complete. {primary_flag}."
+            elif gpt_score < 0.20:
+                finding = "AI Analysis complete. No threats detected across all 7 threat vectors."
             else:
-                finding = "AI Analysis complete. No clear brand impersonation found."
+                finding = f"AI Analysis complete. Ambiguous signals detected (score: {gpt_score*100:.0f}%). Proceed with caution."
 
             # Use GPT's own score. If GPT omits or returns 0 (which can mean "not sure"),
             # fall back to 0.1 (neutral) — NOT ml_score, to preserve independence.
