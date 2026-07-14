@@ -11,9 +11,12 @@ Requirements:
   - Get a key: https://console.cloud.google.com → Enable "Safe Browsing API"
 """
 
+import logging
 import os
 import httpx
 from typing import Optional
+
+logger = logging.getLogger("gaudon.safe_browsing")
 
 _API_BASE = "https://safebrowsing.googleapis.com/v4/threatMatches:find"
 
@@ -80,8 +83,8 @@ async def check_safe_browsing(url: str) -> dict:
             }
 
     except httpx.TimeoutException:
-        print(f"[SafeBrowsing] Timeout checking {url}")
+        logger.warning("[SafeBrowsing] Timeout checking %s", url)
         return {"is_malicious": False, "threat_types": [], "platform_types": []}
-    except Exception as e:
-        print(f"[SafeBrowsing] Error: {e}")
+    except Exception as exc:
+        logger.exception("[SafeBrowsing] Error checking %s", url)
         return {"is_malicious": False, "threat_types": [], "platform_types": []}

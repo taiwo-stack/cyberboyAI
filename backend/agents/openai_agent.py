@@ -1,16 +1,16 @@
-import os
 import json
-import uuid
+import logging
+import os
 import random
 import time
 import asyncio
 import sys
-from dotenv import load_dotenv
+import uuid
 from openai import AsyncOpenAI
 from playwright.sync_api import sync_playwright
 from schemas.agent_outputs import OpenAIAgentResult
 
-load_dotenv()
+logger = logging.getLogger("gaudon.openai_agent")
 
 # Real Chrome user-agent strings
 _USER_AGENTS = [
@@ -53,30 +53,37 @@ class OpenAIAgent:
                         status = 0
                     
                     title = ""
-                    try: title = page.title()
-                    except: pass
-                        
+                    try:
+                        title = page.title()
+                    except Exception as exc:
+                        logger.debug("[OpenAIAgent] Could not fetch title for %s", url, exc_info=exc)
+
                     html_content = ""
-                    try: html_content = page.content()
-                    except: pass
-                        
+                    try:
+                        html_content = page.content()
+                    except Exception as exc:
+                        logger.debug("[OpenAIAgent] Could not fetch content for %s", url, exc_info=exc)
+
                     text = ""
-                    try: 
+                    try:
                         text = page.evaluate("() => document.body.innerText")
                         text = text[:2500] if text else ""
-                    except: pass
-                        
+                    except Exception as exc:
+                        logger.debug("[OpenAIAgent] Could not fetch innerText for %s", url, exc_info=exc)
+
                     forms = 0
                     try:
                         forms = page.locator("input[type=password]").count()
-                    except: pass
-                        
+                    except Exception as exc:
+                        logger.debug("[OpenAIAgent] Could not count password fields for %s", url, exc_info=exc)
+
                     meta_desc = ""
                     try:
                         meta_loc = page.locator("meta[name=description]")
                         if meta_loc.count() > 0:
                             meta_desc = meta_loc.first.get_attribute("content") or ""
-                    except: pass
+                    except Exception as exc:
+                        logger.debug("[OpenAIAgent] Could not fetch meta description for %s", url, exc_info=exc)
 
                 finally:
                     browser.close()
@@ -89,8 +96,8 @@ class OpenAIAgent:
                     "meta_desc": meta_desc,
                     "status": status
                 }
-        except Exception as e:
-            print(f"Playwright general error: {e}")
+        except Exception as exc:
+            logger.exception("[OpenAIAgent] Playwright general error for url=%r", url)
             return fallback
 
     async def _fetch_page(self, url: str) -> dict:
@@ -117,13 +124,13 @@ class OpenAIAgent:
             }
         elif scraped_data and scraped_data.get("html"):
             page_data = {
-                "title": brand_result.closest_brand if brand_result else "", 
+                "title": brand_result.closest_brand if brand_result else "",
                 "text": scraped_data.get("text", ""),
                 "html": scraped_data.get("html", ""),
                 "forms": scraped_data.get("dynamic_findings", {}).get("has_password_field", 0),
                 "status": 200
             }
-            print(f"[OpenAIAgent] Reusing DOM data from pipeline (Fast-Path active)")
+            logger.debug("[OpenAIAgent] Reusing DOM data from pipeline (Fast-Path active) for %s", url)
         else:
             page_data = await self._fetch_page(url)
         
@@ -316,11 +323,13 @@ Domain Brand Match Hint: {brand_ctx}
                 execution_ms=int((time.time() - start_time) * 1000)
             )
             
-        except Exception as e:
+        except Exception as exc:
+            logger.exception("[OpenAIAgent] AI analysis error for url=%r", url)
             return OpenAIAgentResult(
                 openai_score=ml_score, confidence=0, red_flags=[],
-                explanation=f"AI analysis error: {str(e)}",
+                explanation="AI analysis encountered an internal error.",
                 advice="Standard caution advised.",
                 threat_type="benign",
-                finding="AI Analysis failed (Internal Error)."
+                finding="AI Analysis failed (Internal Error).",
+                execution_ms=int((time.time() - start_time) * 1000)
             )

@@ -1,6 +1,9 @@
 import json
+import logging
 import os
 from typing import List, Dict, Optional, Tuple
+
+logger = logging.getLogger("gaudon.rules_engine")
 
 class RulesEngine:
     def __init__(self):
@@ -26,8 +29,8 @@ class RulesEngine:
             else:
                 self.phishing_kits = []
                 
-        except Exception as e:
-            print(f"[RulesEngine] Failed to load rules: {e}")
+        except Exception as exc:
+            logger.exception("[RulesEngine] Failed to load rules from %s", self.rules_dir)
 
     def scan_for_suspension(self, text: str) -> bool:
         """Scans the text for platform suspension/TOS violation strings."""

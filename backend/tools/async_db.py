@@ -35,5 +35,5 @@ async def db(query_fn):
     Example:
         result = await db(lambda: supabase.table("nigerian_brands").select("*").execute())
     """
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     return await loop.run_in_executor(_db_executor, query_fn)

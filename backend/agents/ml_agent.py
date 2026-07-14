@@ -1,3 +1,4 @@
+import logging
 import os
 import joblib
 import time
@@ -5,7 +6,10 @@ import numpy as np
 import tldextract
 from tools.url_tools import extract_features
 from tools.supabase_client import supabase
+from tools.trusted_domains import trusted_domain_manager
 from schemas.agent_outputs import MLAgentResult
+
+logger = logging.getLogger("gaudon.ml_agent")
 
 class MLAgent:
     def __init__(self):
@@ -14,35 +18,26 @@ class MLAgent:
         try:
             self.model = joblib.load(model_path)
             self.feature_names = [
-                "domain_age_days", "keyword_count", "entropy", "subdomain_depth", "is_https", 
+                "domain_age_days", "keyword_count", "entropy", "subdomain_depth", "is_https",
                 "url_length", "hyphen_count", "tld_risk_score", "special_char_count", "numeric_substitution",
-                "percent_encoding_count", "double_slash_redirect", "is_ip_address", "v_c_ratio", 
+                "percent_encoding_count", "double_slash_redirect", "is_ip_address", "v_c_ratio",
                 "consecutive_chars", "is_shortened", "has_non_standard_port",
                 "path_depth", "has_suspicious_extension", "suspicious_subdomain"
             ]
-        except Exception as e:
-            print(f"Error loading ML model: {e}")
+        except Exception as exc:
+            logger.exception("Error loading ML model from %s", model_path)
             self.model = None
 
-        # Domain whitelist: these are confirmed-safe registered domains.
-        # The ML model is designed for UNKNOWN threats, not re-checking known-good brands.
-        self._whitelist = {
-            "google.com", "facebook.com", "instagram.com", "whatsapp.com",
-            "microsoft.com", "apple.com", "amazon.com", "netflix.com",
-            "twitter.com", "x.com", "linkedin.com", "youtube.com",
-            "github.com", "paypal.com", "binance.com", "coinbase.com",
-            "gtbank.com", "accessbank.com", "zenithbank.com", "firstbank.ng",
-            "ubagroup.com", "kuda.com", "opay.com", "palmpay.com",
-            "moniepoint.com", "flutterwave.com", "paystack.com", "piggyvest.com",
-            "mtn.com.ng", "airtel.com.ng", "glo.com", "jumia.com.ng",
-        }
-
     def _is_whitelisted(self, url: str) -> bool:
-        """Checks if the registered domain of a URL is in the trusted whitelist."""
+        """Checks if the registered domain of a URL is in the trusted whitelist.
+
+        Delegates to ``trusted_domain_manager`` (the single source of truth)
+        instead of maintaining a duplicate hardcoded set here.
+        """
         try:
             ext = tldextract.extract(url)
             domain = f"{ext.domain}.{ext.suffix}".lower()
-            return domain in self._whitelist
+            return trusted_domain_manager.is_trusted(domain)
         except Exception:
             return False
 
@@ -161,12 +156,12 @@ class MLAgent:
                 execution_ms=int((time.time() - start_time) * 1000)
             )
 
-        except Exception as e:
-            print(f"ML Processing Error: {e}")
+        except Exception as exc:
+            logger.exception("[MLAgent] Processing error for url=%r", url)
             return MLAgentResult(
                 ml_score=0.50,
                 features={},
                 high_risk_features=[],
-                finding=f"WARNING: ML processing error: {str(e)}. Fallback to 50% confidence.",
+                finding="WARNING: ML processing error. Fallback to 50% confidence.",
                 execution_ms=int((time.time() - start_time) * 1000)
             )

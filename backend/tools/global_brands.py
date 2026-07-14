@@ -9,11 +9,14 @@ Refresh cycle: every 24 hours automatically.
 """
 
 import io
+import logging
 import time
 import zipfile
 import threading
 import tldextract
 import httpx
+
+logger = logging.getLogger("gaudon.global_brands")
 
 # Hardcoded emergency fallback — 60 most-impersonated global brands
 _EMERGENCY_FALLBACK = [
@@ -62,8 +65,8 @@ class GlobalBrandManager:
                     break
 
             return list(labels) if labels else list(_EMERGENCY_FALLBACK)
-        except Exception as e:
-            print(f"[GlobalBrands] Failed to download Tranco list: {e}. Using fallback.")
+        except Exception as exc:
+            logger.warning("[GlobalBrands] Failed to download Tranco list: %s. Using fallback.", exc)
             return list(_EMERGENCY_FALLBACK)
 
     def load(self) -> None:
@@ -73,14 +76,14 @@ class GlobalBrandManager:
             if now - self._last_loaded < _REFRESH_INTERVAL and self._loaded_ok:
                 return  # Still fresh
 
-            print("[GlobalBrands] Loading Tranco Top 500 global domain labels...")
+            logger.info("[GlobalBrands] Loading Tranco Top 500 global domain labels...")
             brands = self._download_and_parse()
             # Ensure essential delivery brands are always present even if Tranco list omits them
             _CRITICAL_BRANDS = [
                 "dhl", "fedex", "ups", "usps", "royalmail", "emirates",
                 "gtbank", "gtb", "accessbank", "zenithbank", "zenith", "uba", "firstbank", "opay", "palmpay", "kuda",
             ]
-            # Merge while preserving uniqueness (case‑insensitive)
+            # Merge while preserving uniqueness (case-insensitive)
             existing = set(b.lower() for b in brands)
             for b in _CRITICAL_BRANDS:
                 if b.lower() not in existing:
@@ -88,7 +91,7 @@ class GlobalBrandManager:
             self._brands = brands
             self._last_loaded = now
             self._loaded_ok = True
-            print(f"[GlobalBrands] Loaded {len(brands)} global brand labels (incl. critical delivery/finance).")
+            logger.info("[GlobalBrands] Loaded %d global brand labels (incl. critical delivery/finance).", len(brands))
 
     def get_brands(self) -> list[str]:
         """Returns the current list of global brand labels."""

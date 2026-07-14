@@ -1,9 +1,12 @@
+import logging
 import time
 from urllib.parse import urlparse
 from typing import List
 from pydantic import BaseModel
 from tools.behavioral_analysis import behavioral_analyzer
 from schemas.agent_outputs import BehavioralAgentResult
+
+logger = logging.getLogger("gaudon.behavioral_agent")
 
 class BehavioralAgent:
     def __init__(self):

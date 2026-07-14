@@ -19,10 +19,13 @@ Row-Level Security: allow SELECT for the service role key only.
 """
 
 import asyncio
+import logging
 import time
 from typing import Set
 from tools.supabase_client import supabase
 from tools.async_db import db
+
+logger = logging.getLogger("gaudon.trusted_domains")
 
 
 # ---------------------------------------------------------------------------
@@ -101,9 +104,9 @@ class TrustedDomainManager:
             if res.data:
                 self._domains = {row["domain"].lower() for row in res.data}
                 self._last_loaded = time.time()
-                print(f"[TrustedDomainManager] Loaded {len(self._domains)} trusted domains from Supabase.")
-        except Exception as e:
-            print(f"[TrustedDomainManager] Warning: could not load from Supabase ({e}). Using local fallback.")
+                logger.info("[TrustedDomains] Loaded %d trusted domains from Supabase.", len(self._domains))
+        except Exception as exc:
+            logger.warning("[TrustedDomains] Could not load from Supabase: %s. Using local fallback.", exc)
             self._domains = {d for d, _ in _SEED_DOMAINS}
 
     def is_trusted(self, domain: str) -> bool:
@@ -119,8 +122,8 @@ class TrustedDomainManager:
             ).execute())
             self._domains.add(domain.lower())
             return True
-        except Exception as e:
-            print(f"[TrustedDomainManager] Failed to add '{domain}': {e}")
+        except Exception as exc:
+            logger.exception("[TrustedDomains] Failed to add domain '%s'", domain)
             return False
 
     async def remove(self, domain: str) -> bool:
@@ -129,8 +132,8 @@ class TrustedDomainManager:
             await db(lambda: supabase.table("trusted_domains").delete().eq("domain", domain.lower()).execute())
             self._domains.discard(domain.lower())
             return True
-        except Exception as e:
-            print(f"[TrustedDomainManager] Failed to remove '{domain}': {e}")
+        except Exception as exc:
+            logger.exception("[TrustedDomains] Failed to remove domain '%s'", domain)
             return False
 
     @property
@@ -145,9 +148,9 @@ class TrustedDomainManager:
         try:
             # Using upsert ensures we don't create duplicates but DO add new seeds
             await db(lambda: supabase.table("trusted_domains").upsert(rows, on_conflict="domain").execute())
-            print(f"[TrustedDomainManager] Synced {len(rows)} global seeds to Supabase.")
-        except Exception as e:
-            print(f"[TrustedDomainManager] Seed sync failed ({e}). Using local fallback.")
+            logger.info("[TrustedDomains] Synced %d global seeds to Supabase.", len(rows))
+        except Exception as exc:
+            logger.warning("[TrustedDomains] Seed sync failed: %s. Using local fallback.", exc)
             self._domains = {d for d, _ in _SEED_DOMAINS}
 
 

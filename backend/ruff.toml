@@ -1,0 +1,28 @@
+# ruff.toml — Ruff linter configuration for the GaudOn backend
+# Docs: https://docs.astral.sh/ruff/configuration/
+
+line-length = 120
+
+[lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes (unused imports, undefined names)
+    "B",   # flake8-bugbear (common bugs and design issues)
+    "I",   # isort (import ordering)
+    "UP",  # pyupgrade (modern Python syntax)
+    "S",   # flake8-bandit security rules (subset)
+    "RUF", # Ruff-specific rules
+]
+
+ignore = [
+    "S101",  # Use of assert — acceptable in tests
+    "B008",  # Do not perform function calls in default arguments (FastAPI Depends pattern)
+    "E501",  # Line too long — enforced by line-length setting instead
+]
+
+[lint.per-file-ignores]
+"tests/*" = ["S", "B"]   # Relax security + bugbear rules in tests
+
+[lint.isort]
+known-first-party = ["agents", "schemas", "tools", "exceptions"]

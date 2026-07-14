@@ -1,5 +1,8 @@
+import logging
 import os
 from openai import AsyncOpenAI
+
+logger = logging.getLogger("gaudon.vision_tools")
 
 async def extract_text_from_image(base64_image: str) -> str:
     """
@@ -38,9 +41,9 @@ async def extract_text_from_image(base64_image: str) -> str:
         )
         
         extracted_text = response.choices[0].message.content.strip()
-        print(f"[VisionTool] Extracted text length: {len(extracted_text)}")
+        logger.info("[VisionTool] Extracted text length: %d", len(extracted_text))
         return extracted_text
-        
-    except Exception as e:
-        print(f"[VisionTool] Error extracting text from image: {e}")
+
+    except Exception as exc:
+        logger.exception("[VisionTool] Error extracting text from image")
         return ""

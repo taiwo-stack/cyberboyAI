@@ -1,3 +1,4 @@
+import logging
 import os
 import asyncio
 import socket
@@ -9,7 +10,10 @@ from tools.supabase_client import supabase
 from tools.async_db import db
 from tools import cache
 from tools.safe_browsing import check_safe_browsing
+from tools.trusted_domains import trusted_domain_manager
 from schemas.agent_outputs import LookupAgentResult
+
+logger = logging.getLogger("gaudon.lookup_agent")
 
 class LookupAgent:
     def __init__(self):
@@ -33,7 +37,7 @@ class LookupAgent:
                 return 0
             
             # Resolve IP (blocking call wrapped in executor)
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             try:
                 ip = await loop.run_in_executor(None, socket.gethostbyname, hostname)
             except Exception:
@@ -139,7 +143,6 @@ class LookupAgent:
             # Extract registered domain to check trusted whitelist
             ext = tldextract.extract(url)
             domain = f"{ext.domain}.{ext.suffix}".lower() if ext.suffix else ext.domain.lower()
-            from tools.trusted_domains import trusted_domain_manager
             is_trusted = trusted_domain_manager.is_trusted(domain)
 
             otx_solo   = otx_hit and confirmed_sources == 0
@@ -212,6 +215,7 @@ class LookupAgent:
             )
 
         except Exception:
+            logger.exception("[LookupAgent] Unexpected error during check for url=%r", url)
             return LookupAgentResult(
                 db_score=0.0, matched=False, sources_flagged=[],
                 phishtank_hit=False, abuseipdb_score=0, otx_hit=False, community_hit=False

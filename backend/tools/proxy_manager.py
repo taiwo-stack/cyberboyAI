@@ -28,10 +28,13 @@ Usage:
   # Then pass to httpx.AsyncClient(proxies=proxy_url) or Playwright context
 """
 
+import logging
 import os
 import random
 import string
 from typing import Optional
+
+logger = logging.getLogger("gaudon.proxy_manager")
 
 
 def _random_session() -> str:
@@ -55,16 +58,17 @@ class ProxyRotationManager:
         self._country   = os.getenv("PROXY_COUNTRY", "ng")  # Nigeria by default
 
         if self._enabled and not all([self._host, self._port, self._username, self._password]):
-            print(
-                "[ProxyRotationManager] WARNING: PROXY_ENABLED=true but credentials "
+            logger.warning(
+                "[ProxyRotationManager] PROXY_ENABLED=true but credentials "
                 "are incomplete. Proxy will not be used. Check your .env file."
             )
             self._enabled = False
 
         if self._enabled:
-            print(
-                f"[ProxyRotationManager] Residential proxy active via "
-                f"{self._provider} ({self._host}:{self._port}, country={self._country})"
+            logger.info(
+                "[ProxyRotationManager] Residential proxy active via "
+                "%s (%s:%s, country=%s)",
+                self._provider, self._host, self._port, self._country
             )
 
     @property

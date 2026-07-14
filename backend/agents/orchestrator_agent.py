@@ -1,3 +1,4 @@
+import logging
 import time
 import re
 import asyncio
@@ -18,6 +19,8 @@ from agents.email_agent import EmailAgent
 from agents.verdict import compute_verdict
 from tools.supabase_client import supabase
 from tools.async_db import db
+
+logger = logging.getLogger("gaudon.orchestrator")
 
 class OrchestratorAgent:
     def __init__(self):
@@ -82,8 +85,8 @@ class OrchestratorAgent:
                 # "threat_type": response.threat_type  <-- REMOVED UNTIL COLUMN IS ADDED TO SUPABASE
             }
             await db(lambda: supabase.table("threat_submissions").insert(data).execute())
-        except Exception as e:
-            print(f"Error storing submission to Supabase: {e}")
+        except Exception as exc:
+            logger.exception("[Orchestrator] Error storing submission for url=%r", input_str)
 
     async def _analyze_single_url(
         self,
@@ -108,7 +111,7 @@ class OrchestratorAgent:
             if _is_short:
                 resolved_url, _redirect_chain = await unshorten(target_url)
                 if resolved_url != target_url:
-                    print(f"[Orchestrator] Unshortened {target_url} → {resolved_url} ({len(_redirect_chain)} hops)")
+                    logger.info("[Orchestrator] Unshortened %s → %s (%d hops)", target_url, resolved_url, len(_redirect_chain))
                     target_url = resolved_url
 
             # 3. Domain Logic
@@ -164,8 +167,8 @@ class OrchestratorAgent:
                             brand_result=None, lookup_result=None, ml_result=None, openai_result=None,
                             processing_ms=int((time.time() - start_time) * 1000)
                         )
-            except Exception as e:
-                print(f"[Orchestrator] Cache check failed (SSL/Network) for {target_url}: {e}. Skipping cache.")
+            except Exception as exc:
+                logger.warning("[Orchestrator] Cache check failed for %s: %s. Skipping cache.", target_url, exc)
 
             # 5. Run Tier 1 Agents in Parallel
             from schemas.agent_outputs import BrandAgentResult
@@ -261,15 +264,12 @@ class OrchestratorAgent:
             asyncio.create_task(self._store_submission(target_url, response))
             return response
 
-        except Exception as e:
-            import traceback
-            error_msg = traceback.format_exc()
-            print(f"\n[Orchestrator] URL ANALYSIS ERROR for {target_url}:\n{error_msg}")
-            
+        except Exception as exc:
+            logger.exception("[Orchestrator] URL analysis error for %s", target_url)
             return VerdictResponse(
                 verdict="SUSPICIOUS",
                 score=0.5,
-                red_flags=[f"URL Scan Error: {str(e)}"],
+                red_flags=["URL scan encountered an internal error."],
                 explanation=f"Encountered an error while scanning {target_url}.",
                 advice="Standard caution advised.",
                 threat_type="phishing",
@@ -289,25 +289,24 @@ class OrchestratorAgent:
         # 0. Handle OCR from Image if provided
         if request.image_base64:
             from tools.vision_tools import extract_text_from_image
-            print("[Orchestrator] Image detected. Running OCR via VisionTool...")
+            logger.info("[Orchestrator] Image detected. Running OCR via VisionTool...")
             extracted_text = await extract_text_from_image(request.image_base64)
             if extracted_text:
-                print(f"[Orchestrator] OCR Result: {extracted_text}")
-                # Combine the extracted text with any text the user typed
-                request.input = f"{extracted_text}\n\n{request.input}".strip()
+                logger.info("[Orchestrator] OCR Result: %s", extracted_text[:200])
+                request.raw_input = f"{extracted_text}\n\n{request.raw_input}".strip()
             else:
-                print("[Orchestrator] VisionTool failed to extract text.")
+                logger.warning("[Orchestrator] VisionTool failed to extract text.")
         
         try:
             # 1. Detect Input Type
-            input_type = self._detect_input_type(request.input)
+            input_type = self._detect_input_type(request.raw_input)
             
             # Global Database Cache check on raw input
             from datetime import datetime, timedelta, timezone
             try:
                 recent_res = await db(lambda: supabase.table("threat_submissions")
                     .select("verdict, final_score, red_flags, explanation, advice, submitted_at, agent_trace")
-                    .eq("raw_input", request.input)
+                    .eq("raw_input", request.raw_input)
                     .order("submitted_at", desc=True)
                     .limit(1)
                     .execute())
@@ -331,8 +330,8 @@ class OrchestratorAgent:
                             brand_result=None, lookup_result=None, ml_result=None, openai_result=None,
                             processing_ms=int((time.time() - start_time) * 1000)
                         )
-            except Exception as e:
-                print(f"[Orchestrator] Global cache check failed: {e}. Skipping cache.")
+            except Exception as exc:
+                logger.warning("[Orchestrator] Global cache check failed: %s. Skipping cache.", exc)
 
             # 2. Extract links and classify text
             extracted_urls = []
@@ -342,22 +341,22 @@ class OrchestratorAgent:
 
             if input_type in ["message", "email"]:
                 from tools.sms_tools import extract_urls_from_message, analyze_sms_urgency, openai_extract_urls
-                extracted_urls = extract_urls_from_message(request.input)
+                extracted_urls = extract_urls_from_message(request.raw_input)
                 
                 # Always run email classifier on raw text input
-                email_result = await self.email.check(request.input)
+                email_result = await self.email.check(request.raw_input)
 
                 # Fallback to LLM extraction if regex found nothing
                 if not extracted_urls:
-                    print("[Orchestrator] Regex found no URL — trying OpenAI URL extractor...")
-                    extracted_urls = await openai_extract_urls(request.input)
+                    logger.info("[Orchestrator] Regex found no URL — trying OpenAI URL extractor...")
+                    extracted_urls = await openai_extract_urls(request.raw_input)
                     if extracted_urls:
-                        print(f"[Orchestrator] OpenAI extracted URLs: {extracted_urls}")
+                        logger.info("[Orchestrator] OpenAI extracted URLs: %s", extracted_urls)
 
-                sms_urgent, sms_msg = await analyze_sms_urgency(request.input)
+                sms_urgent, sms_msg = await analyze_sms_urgency(request.raw_input)
             else:
                 # Direct URL/IP input
-                extracted_urls = [request.input]
+                extracted_urls = [request.raw_input]
 
             # 3. If NO URLs were found in the content
             if not extracted_urls:
@@ -416,7 +415,7 @@ class OrchestratorAgent:
                     email_result=email_result,
                     processing_ms=int((time.time() - start_time) * 1000)
                 )
-                asyncio.create_task(self._store_submission(request.input, response))
+                asyncio.create_task(self._store_submission(request.raw_input, response))
                 return response
 
             # 4. We have URLs! Normalize and deduplicate them first to avoid duplicate scans
@@ -500,18 +499,15 @@ class OrchestratorAgent:
             )
 
             # Store the aggregated verdict for this raw input in the database
-            asyncio.create_task(self._store_submission(request.input, final_response))
+            asyncio.create_task(self._store_submission(request.raw_input, final_response))
             return final_response
 
-        except Exception as e:
-            import traceback
-            error_msg = traceback.format_exc()
-            print(f"\n[Orchestrator] CRITICAL ANALYSIS ERROR:\n{error_msg}")
-            
+        except Exception as exc:
+            logger.exception("[Orchestrator] Critical analysis error")
             return VerdictResponse(
                 verdict="SUSPICIOUS",
                 score=0.5,
-                red_flags=[f"System Engine Error: {str(e)}"],
+                red_flags=["Analysis engine encountered an internal error."],
                 explanation="The GaudOn engine encountered a technical error during analysis.",
                 advice="Standard caution advised. Re-scan the link in a few minutes.",
                 threat_type="phishing",

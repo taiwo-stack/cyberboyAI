@@ -7,11 +7,15 @@ Three-layer detection:
   Layer 3: Leet-speak normalization — catches numeric substitutions (4→a, 0→o, etc.)
 """
 
+import logging
 import tldextract
 import Levenshtein
 from typing import List, Optional
 from schemas.agent_outputs import BrandAgentResult
 from tools.global_brands import global_brand_manager
+from tools.trusted_domains import trusted_domain_manager
+
+logger = logging.getLogger("gaudon.brand_agent")
 
 # ── Homoglyph Map ─────────────────────────────────────────────────────────────
 # Visually deceptive characters that look identical in most fonts.
@@ -180,6 +184,13 @@ class BrandAgent:
 
             red_flag = None
             closest_domain = f"{closest_brand_label}.com" if closest_brand_label else None
+
+            # A domain cannot impersonate itself. If the domain matches the closest brand
+            # primary domain, or is explicitly whitelisted as a trusted domain, it's not impersonation.
+            if is_impersonation:
+                if (submitted_domain == closest_domain) or trusted_domain_manager.is_trusted(submitted_domain):
+                    is_impersonation = False
+
             if is_impersonation:
                 red_flag = (
                     f"Typosquatting detected: '{submitted_domain}' is impersonating "
@@ -206,6 +217,6 @@ class BrandAgent:
                 finding=finding
             )
 
-        except Exception as e:
-            print(f"[BrandAgent] Error: {e}")
+        except Exception as exc:
+            logger.exception("[BrandAgent] Unexpected error checking url=%r", url)
             return BrandAgentResult(is_impersonation=False, similarity_score=0.0)

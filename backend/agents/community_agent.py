@@ -1,7 +1,10 @@
+import logging
 import tldextract
 from datetime import datetime, timezone
 from tools.supabase_client import supabase
 from tools.async_db import db
+
+logger = logging.getLogger("gaudon.community_agent")
 
 
 class CommunityAgent:
@@ -24,8 +27,8 @@ class CommunityAgent:
                 .limit(50)
                 .execute())
             return res.data
-        except Exception as e:
-            print(f"Error fetching pending reports: {e}")
+        except Exception as exc:
+            logger.exception("[CommunityAgent] Error fetching pending reports")
             return []
 
     async def confirm_threat(self, submission_id: str, confirmed: bool, notes: str = "") -> dict:
@@ -68,9 +71,9 @@ class CommunityAgent:
 
             return {"success": True, "threat_added": confirmed}
 
-        except Exception as e:
-            print(f"Error confirming threat {submission_id}: {e}")
-            return {"success": False, "error": str(e)}
+        except Exception as exc:
+            logger.exception("[CommunityAgent] Error confirming threat id=%r", submission_id)
+            return {"success": False, "error": "Internal error while confirming submission."}
 
     async def run_weekly_review(self) -> dict:
         """
@@ -91,6 +94,6 @@ class CommunityAgent:
             sorted_domains = sorted(domains.items(), key=lambda x: x[1], reverse=True)
             return {"pending_count": len(pending), "domains": sorted_domains}
 
-        except Exception as e:
-            print(f"Error in weekly review: {e}")
+        except Exception as exc:
+            logger.exception("[CommunityAgent] Error in weekly review")
             return {"pending_count": 0, "domains": []}

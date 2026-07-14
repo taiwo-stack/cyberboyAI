@@ -1,8 +1,12 @@
+import logging
 import os
 import joblib
+import re
 import time
 import numpy as np
 from schemas.agent_outputs import EmailAgentResult
+
+logger = logging.getLogger("gaudon.email_agent")
 
 class EmailAgent:
     def __init__(self):
@@ -13,8 +17,8 @@ class EmailAgent:
         try:
             self.model = joblib.load(model_path)
             self.vectorizer = joblib.load(vectorizer_path)
-        except Exception as e:
-            print(f"Error loading Email ML model/vectorizer: {e}")
+        except Exception as exc:
+            logger.exception("[EmailAgent] Error loading ML model/vectorizer")
             self.model = None
             self.vectorizer = None
 
@@ -28,15 +32,14 @@ class EmailAgent:
             # 1. Vectorize input text
             # The input text typically contains both subject and body in real-world scenarios.
             text_features = self.vectorizer.transform([text])
-            
+
             # 2. Model Inference
             probs = self.model.predict_proba(text_features)[0]
-            
+
             # probs[0] is Ham, probs[1] is Spam/Phishing
             email_score = float(probs[1])
-            
+
             # --- EMAIL HEADER SPOOFING DETECTION ---
-            import re
             header_score_boost = 0.0
             header_finding = ""
             
@@ -81,6 +84,10 @@ class EmailAgent:
                 execution_ms=int((time.time() - start_time) * 1000)
             )
 
-        except Exception as e:
-            print(f"Email ML Processing Error: {e}")
-            return EmailAgentResult(email_score=0.0, finding=f"Processing error: {str(e)}", execution_ms=int((time.time() - start_time) * 1000))
+        except Exception as exc:
+            logger.exception("[EmailAgent] Processing error")
+            return EmailAgentResult(
+                email_score=0.0,
+                finding="Email analysis encountered an internal error.",
+                execution_ms=int((time.time() - start_time) * 1000)
+            )

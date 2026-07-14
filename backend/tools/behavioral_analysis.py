@@ -1,11 +1,13 @@
+import logging
 import ssl
 import socket
 import httpx
 import asyncio
-import sys
 from datetime import datetime
 from playwright.sync_api import sync_playwright
 from typing import List, Dict, Any, Optional
+
+logger = logging.getLogger("gaudon.behavioral_analysis")
 
 class BehavioralAnalyzer:
     def __init__(self):
@@ -80,8 +82,9 @@ class BehavioralAnalyzer:
             results["error"] = "Connection Timeout (Port 443 closed)"
         except ConnectionRefusedError:
             results["error"] = "Connection Refused (No SSL service)"
-        except Exception as e:
-            results["error"] = str(e)
+        except Exception as exc:
+            logger.debug("[BehavioralAnalysis] SSL check error for %s", hostname, exc_info=exc)
+            results["error"] = "SSL check encountered an unexpected error."
             
         return results
 
@@ -132,9 +135,10 @@ class BehavioralAnalyzer:
                     results["scripts_count"] = len(page.query_selector_all('script'))
                 finally:
                     browser.close()
-        except Exception as e:
-            results["error"] = str(e)
-            results["evidence"].append(f"Browser scan partially failed: {str(e)[:50]}")
+        except Exception as exc:
+            logger.debug("[BehavioralAnalysis] Browser scan error for %s", url, exc_info=exc)
+            results["error"] = "Browser scan encountered an unexpected error."
+            results["evidence"].append("Browser scan partially failed — see server logs.")
             
         return results
 
